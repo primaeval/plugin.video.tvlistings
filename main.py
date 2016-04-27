@@ -58,6 +58,29 @@ def detail(url):
     plugin.set_view_mode(51)
     return items
     
+def get_tvdb_id(name):
+    tvdb_url = "http://thetvdb.com//api/GetSeries.php?seriesname=%s" % name
+    r = requests.get(tvdb_url)
+    tvdb_html = r.text
+    tvdb_id = ''
+    tvdb_match = re.search(r'<seriesid>(.*?)</seriesid>', tvdb_html, flags=(re.DOTALL | re.MULTILINE))
+    if tvdb_match:
+        tvdb_id = tvdb_match.group(1)
+    return tvdb_id
+  
+@plugin.route('/play/<title>/<season>/<episode>')
+def play(title,season,episode):
+    tvdb_id = get_tvdb_id(title)
+    meta_url = "plugin://plugin.video.meta/tv/play/%s/%s/%s/%s" % (tvdb_id,season,episode,'select')
+    log(meta_url)
+    items = [
+    {'label': '%s (%s) %sx%s' % (title,tvdb_id,season,episode),
+     'path': meta_url,
+     'is_playable': True,
+     }
+    ]
+    return plugin.finish(items)
+  
 @plugin.route('/listing/<channel>')
 def listing(channel):
     r = requests.get('http://my.tvguide.co.uk/channellisting.asp?ch=%s&cTime=4/27/2016%%208:00:00%%20AM&thisTime=&thisDay=' % channel)
@@ -76,7 +99,9 @@ def listing(channel):
         match = re.search(r'<a href="(http://www.tvguide.co.uk/detail/.*?)"',table,flags=(re.DOTALL | re.MULTILINE))
         path = ''
         if match:
-            path = plugin.url_for('detail', url=match.group(1).encode("utf8"))
+            detail = url=match.group(1).encode("utf8")
+            
+        
             
         season = ''
         episode = ''
@@ -85,10 +110,33 @@ def listing(channel):
             season = match.group(1)
             episode = match.group(2)
         
+        genre = ''
+        match = re.search(r'<span class="tvchannel">Category </span><span class="programmetext">(.*?)</span>',table,flags=(re.DOTALL | re.MULTILINE))
+        if match:
+            genre = match.group(1)
+            
+        time = ''
+        title = ''
+        plot = ''
         match = re.search(r'<span class="season">(.*?) </span>.*?<span class="programmeheading" >(.*?)</span>.*?<span class="programmetext">(.*?)</span>',table,flags=(re.DOTALL | re.MULTILINE))
         if match:
-            label = "%s [COLOR orange][B]%s[/B][/COLOR] %s" % (match.group(1),match.group(2),match.group(3))
-            items.append({'label': label, 'path': path, 'thumbnail': thumb, 'info': {'plot':match.group(3), 'season':season, 'episode':episode}})
+            time = match.group(1)
+            title = match.group(2)
+            plot = match.group(3)
+            
+        if title and season and episode:
+            path = plugin.url_for('play', title=title,season=season,episode=episode)
+        #tvdb_id = get_tvdb_id(title)
+        #meta_url = "plugin://plugin.video.meta/tv/play/%s/%s/%s/%s" % (tvdb_id,season,episode,'select')
+        
+        if title:
+            label = "%s [COLOR orange][B]%s[/B][/COLOR] %s" % (time,title,plot)
+            item = {'label': label,  'thumbnail': thumb, 'info': {'plot':plot, 'season':season, 'episode':episode, 'genre':genre}}
+            if path:
+                item['path'] = path
+            else:
+                item['is_playable'] = False,
+            items.append(item)
    
 
     plugin.set_content('episodes')    
