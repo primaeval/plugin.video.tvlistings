@@ -22,24 +22,64 @@ from trakt import Trakt
 
 plugin = Plugin()
 
+def log2(v):
+    xbmc.log(repr(v))
 
 def log(v):
     xbmc.log(re.sub(',',',\n',repr(v)))
 
+@plugin.route('/listing/<channel>')
+def listing(channel):
+    r = requests.get('http://my.tvguide.co.uk/channellisting.asp?ch=%s&cTime=4/27/2016%%208:00:00%%20AM&thisTime=&thisDay=' % channel)
+    html = r.text
+    log2(html)
+    return
+    
+    match = re.search(r'<select name="channelid">(.*?)</select>',html,flags=(re.DOTALL | re.MULTILINE))
+    #log(match)
+    if not match:
+        return
+        
+    channels = re.findall(r'<option value=(.*?)>(.*?)</option>',match.group(1),flags=(re.DOTALL | re.MULTILINE))
+    items = []
+    for channel in channels:
+        log(channel)
+        items.append({'label': channel[1], 'path': plugin.url_for('listing', channel=channel[0]),})
+        
+    plugin.set_view_mode(51)
+    return items
+    
+@plugin.route('/channels')
+def channels():
+    r = requests.get('http://www.tvguide.co.uk/')
+    html = r.text
+    #log2(html)
+    
+    match = re.search(r'<select name="channelid">(.*?)</select>',html,flags=(re.DOTALL | re.MULTILINE))
+    #log(match)
+    if not match:
+        return
+        
+    channels = re.findall(r'<option value=(.*?)>(.*?)</option>',match.group(1),flags=(re.DOTALL | re.MULTILINE))
+    items = []
+    for channel in channels:
+        #log(channel)
+        items.append({'label': channel[1], 'path': plugin.url_for('listing', channel=channel[0]),})
+        
+    plugin.set_view_mode(51)
+    return items
 
-@plugin.route('/')
-def index():
+    
+@plugin.route('/now_next')
+def now_next():
     r = requests.get('http://www.tvguide.co.uk/mobile/')
     html = r.text
-    #log(html)
-    #html = HTMLParser.HTMLParser().unescape(html)
     
     channels = html.split('<div class="div-channel-progs">')
     videos = []
     
     items = []
     for channel in channels:
-        #log(channel)
         img_url = ''
         name = ''
         img_match = re.search(r'<img class="img-channel-logo" width="50" src="(.*?)"\s*?alt="(.*?) TV Listings" />', channel)
@@ -51,27 +91,52 @@ def index():
         program = ''
         next_start = ''
         next_program = ''
-        match = re.search(r'<div class="div-time">(.*?)</div>.*?<div class="div-title".*?">(.*?)</div>.*?<div class="div-time">(.*?)</div>.*?<div class="div-title".*?">(.*?)</div>', channel,flags=(re.DOTALL | re.MULTILINE))
+        after_start = ''
+        after_program = ''
+        match = re.search(r'<div class="div-time">(.*?)</div>.*?<div class="div-title".*?">(.*?)</div>.*?<div class="div-time">(.*?)</div>.*?<div class="div-title".*?">(.*?)</div>.*?<div class="div-time">(.*?)</div>.*?<div class="div-title".*?">(.*?)</div>', channel,flags=(re.DOTALL | re.MULTILINE))
         if match:
             start = match.group(1)
             program = match.group(2)
             next_start = match.group(3)
             next_program = match.group(4)
+            after_start = match.group(5)
+            after_program = match.group(6)            
             match = re.search('<img.*?>&nbsp;(.*)',program)
             if match:
                 program = match.group(1)
             match = re.search('<img.*?>&nbsp;(.*)',next_program)
             if match:
                 next_program = match.group(1)
-                
-        label = "[COLOR yellow][B]%s[/B][/COLOR] %s [COLOR orange][B]%s[/B][/COLOR] %s [COLOR white][B]%s[/B][/COLOR]" % (name,start,program,next_start,next_program)
-            
-        items.append({'label':label,'icon':img_url,'thumbnail':img_url})
+            match = re.search('<img.*?>&nbsp;(.*)',after_program)
+            if match:
+                after_program = match.group(1)
 
+        channel_name = plugin.get_setting('channel_name')
+        if  channel_name == 'true':
+            label = "[COLOR yellow][B]%s[/B][/COLOR] %s [COLOR orange][B]%s[/B][/COLOR] %s [COLOR white][B]%s[/B][/COLOR] %s [COLOR grey][B]%s[/B][/COLOR]" % (name,start,program,next_start,next_program,after_start,after_program)
+        else:
+            label = "%s [COLOR orange][B]%s[/B][/COLOR] %s [COLOR white][B]%s[/B][/COLOR] %s [COLOR grey][B]%s[/B][/COLOR]" % (start,program,next_start,next_program,after_start,after_program)
+        items.append({'label':label,'icon':img_url,'thumbnail':img_url})
+        
+    plugin.set_view_mode(51)
+    return items
+
+@plugin.route('/')
+def index():
+
+    items = [
+    {
+        'label': 'Now Next After',
+        'path': plugin.url_for('now_next' ),
+
+    } ,  
+    {
+        'label': 'Channel Listings',
+        'path': plugin.url_for('channels' ),
+
+    } ,     ]
     sorted_items = sorted(items, key=lambda item: item['label'])
     return sorted_items
-
-
     
 if __name__ == '__main__':
     plugin.run()

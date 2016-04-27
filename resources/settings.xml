@@ -1,6 +1,7 @@
 <settings>
 
 <category label="Basic">
+<setting id="channel_name" label="Show Channel Names" type="bool" default="true" />
 </category>
 
 </settings>
