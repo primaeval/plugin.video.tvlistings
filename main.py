@@ -28,24 +28,70 @@ def log2(v):
 def log(v):
     xbmc.log(re.sub(',',',\n',repr(v)))
 
+@plugin.route('/detail/<url>')
+def detail(url):
+    r = requests.get('http://my.tvguide.co.uk/channellisting.asp?ch=%s&cTime=4/27/2016%%208:00:00%%20AM&thisTime=&thisDay=' % channel)
+    html = r.text
+    #log2(html)
+    #return
+    
+    tables = html.split('<table')
+    items = []
+    for table in tables:
+        log(table)
+        thumb = ''
+        match = re.search(r'background-image: url\((.*?)\)',table,flags=(re.DOTALL | re.MULTILINE))
+        if match:
+            thumb = match.group(1)
+        match = re.search(r'<a href="(http://www.tvguide.co.uk/detail/.*?)"',table,flags=(re.DOTALL | re.MULTILINE))
+        path = ''
+        if match:
+            path = plugin.url_for('detail', url=match.group(1))
+        
+        match = re.search(r'<span class="season">(.*?) </span>.*?<span class="programmeheading" >(.*?)</span>.*?<span class="programmetext">(.*?)</span>',table,flags=(re.DOTALL | re.MULTILINE))
+        if match:
+            label = "%s [COLOR orange][B]%s[/B][/COLOR] %s" % (match.group(1),match.group(2),match.group(3))
+            items.append({'label': label, 'path': path, 'thumbnail': thumb, 'info': {'plot':match.group(3)}})
+   
+
+    plugin.set_content('episodes')    
+    plugin.set_view_mode(51)
+    return items
+    
 @plugin.route('/listing/<channel>')
 def listing(channel):
     r = requests.get('http://my.tvguide.co.uk/channellisting.asp?ch=%s&cTime=4/27/2016%%208:00:00%%20AM&thisTime=&thisDay=' % channel)
     html = r.text
-    log2(html)
-    return
+    #log2(html)
+    #return
     
-    match = re.search(r'<select name="channelid">(.*?)</select>',html,flags=(re.DOTALL | re.MULTILINE))
-    #log(match)
-    if not match:
-        return
-        
-    channels = re.findall(r'<option value=(.*?)>(.*?)</option>',match.group(1),flags=(re.DOTALL | re.MULTILINE))
+    tables = html.split('<table')
     items = []
-    for channel in channels:
-        log(channel)
-        items.append({'label': channel[1], 'path': plugin.url_for('listing', channel=channel[0]),})
+    for table in tables:
+        #log(table)
+        thumb = ''
+        match = re.search(r'background-image: url\((.*?)\)',table,flags=(re.DOTALL | re.MULTILINE))
+        if match:
+            thumb = match.group(1)
+        match = re.search(r'<a href="(http://www.tvguide.co.uk/detail/.*?)"',table,flags=(re.DOTALL | re.MULTILINE))
+        path = ''
+        if match:
+            path = plugin.url_for('detail', url=match.group(1).encode("utf8"))
+            
+        season = ''
+        episode = ''
+        match = re.search(r'<b><span class="season">Season (.*?) </span> <span class="season">Episode (.*?) of (.*?)</span>',table,flags=(re.DOTALL | re.MULTILINE))
+        if match:
+            season = match.group(1)
+            episode = match.group(2)
         
+        match = re.search(r'<span class="season">(.*?) </span>.*?<span class="programmeheading" >(.*?)</span>.*?<span class="programmetext">(.*?)</span>',table,flags=(re.DOTALL | re.MULTILINE))
+        if match:
+            label = "%s [COLOR orange][B]%s[/B][/COLOR] %s" % (match.group(1),match.group(2),match.group(3))
+            items.append({'label': label, 'path': path, 'thumbnail': thumb, 'info': {'plot':match.group(3), 'season':season, 'episode':episode}})
+   
+
+    plugin.set_content('episodes')    
     plugin.set_view_mode(51)
     return items
     
