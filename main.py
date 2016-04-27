@@ -80,19 +80,22 @@ def play(title,season,episode):
      }
     ]
     return plugin.finish(items)
-    
+
 @plugin.route('/play_channel/<name>')
 def play_channel(name):
     channel_player = plugin.get_storage('channels')
+    if not name in channel_player:
+        return
     path = channel_player[name]
-
+    #xbmc.Player().play(path)
+    #return plugin.set_resolved_url(path)
     items = [
     {'label': '%s %s' % (name,path),
      'path': path,
      'is_playable': True,
      }
     ]
-    return plugin.finish(items)
+    return items
   
 @plugin.route('/listing/<channel>')
 def listing(channel):
@@ -179,7 +182,8 @@ def channels():
     
 @plugin.route('/now_next')
 def now_next():
-
+    #channel_player = plugin.get_storage('channels')
+    
     
     r = requests.get('http://www.tvguide.co.uk/mobile/')
     html = r.text
@@ -228,6 +232,11 @@ def now_next():
             
         item = {'label':label,'icon':img_url,'thumbnail':img_url}
         item['path'] = plugin.url_for('play_channel', name=name)
+        #item['is_playable'] = False
+        #if name in channel_player:
+        #    item['is_playable'] = True
+        #    item['path'] = channel_player[name]
+        
         items.append(item)
         
     plugin.set_view_mode(51)
@@ -235,8 +244,28 @@ def now_next():
 
 @plugin.route('/store_channels')
 def store_channels():
-    channels = plugin.get_storage('channels','json')
-    channels['BBC1 London'] = 'plugin://plugin.video.iplayerwww/?url=bbc_one_hd&mode=203&name=BBC+One&iconimage=special%3A%2F%2Fhome%2Faddons%2Fplugin.video.iplayerwww%2Fmedia%2Fbbc_one.png&description=&subtitles_url=&logged_in=False'
+    channels = plugin.get_storage('channels')
+    #channels['BBC1 London'] = 'plugin://plugin.video.iplayerwww/?url=bbc_one_hd&mode=203&name=BBC+One&iconimage=special%3A%2F%2Fhome%2Faddons%2Fplugin.video.iplayerwww%2Fmedia%2Fbbc_one.png&description=&subtitles_url=&logged_in=False'
+    
+    f = xbmcvfs.File('special://home/addons/plugin.video.tvlistings/resources/channels.ini')
+    b = f.read()
+    log2(b)
+    f.close()
+    items = re.findall(r'(.*?)=(.*?)\r\n',b)
+    #count = 0
+    for item in items:
+        log2(item)
+        name = item[0]
+        url = item[1]
+        channels[name] = url
+        #if count > 40:
+        #    return
+        #count = count + 1
+    #for name in channels:
+        #log2(name)
+        #log2(channels[name])
+    #cache.sync()
+    
     
 @plugin.route('/')
 def index():
