@@ -80,6 +80,19 @@ def play(title,season,episode):
      }
     ]
     return plugin.finish(items)
+    
+@plugin.route('/play_channel/<name>')
+def play_channel(name):
+    channel_player = plugin.get_storage('channels')
+    path = channel_player[name]
+
+    items = [
+    {'label': '%s %s' % (name,path),
+     'path': path,
+     'is_playable': True,
+     }
+    ]
+    return plugin.finish(items)
   
 @plugin.route('/listing/<channel>')
 def listing(channel):
@@ -166,6 +179,8 @@ def channels():
     
 @plugin.route('/now_next')
 def now_next():
+
+    
     r = requests.get('http://www.tvguide.co.uk/mobile/')
     html = r.text
     
@@ -210,11 +225,19 @@ def now_next():
             label = "[COLOR yellow][B]%s[/B][/COLOR] %s [COLOR orange][B]%s[/B][/COLOR] %s [COLOR white][B]%s[/B][/COLOR] %s [COLOR grey][B]%s[/B][/COLOR]" % (name,start,program,next_start,next_program,after_start,after_program)
         else:
             label = "%s [COLOR orange][B]%s[/B][/COLOR] %s [COLOR white][B]%s[/B][/COLOR] %s [COLOR grey][B]%s[/B][/COLOR]" % (start,program,next_start,next_program,after_start,after_program)
-        items.append({'label':label,'icon':img_url,'thumbnail':img_url})
+            
+        item = {'label':label,'icon':img_url,'thumbnail':img_url}
+        item['path'] = plugin.url_for('play_channel', name=name)
+        items.append(item)
         
     plugin.set_view_mode(51)
     return items
 
+@plugin.route('/store_channels')
+def store_channels():
+    channels = plugin.get_storage('channels','json')
+    channels['BBC1 London'] = 'plugin://plugin.video.iplayerwww/?url=bbc_one_hd&mode=203&name=BBC+One&iconimage=special%3A%2F%2Fhome%2Faddons%2Fplugin.video.iplayerwww%2Fmedia%2Fbbc_one.png&description=&subtitles_url=&logged_in=False'
+    
 @plugin.route('/')
 def index():
 
@@ -228,7 +251,13 @@ def index():
         'label': 'Channel Listings',
         'path': plugin.url_for('channels' ),
 
-    } ,     ]
+    } ,     
+    {
+        'label': 'Store Channels',
+        'path': plugin.url_for('store_channels' ),
+
+    } ,         
+    ]
     sorted_items = sorted(items, key=lambda item: item['label'])
     return sorted_items
     
