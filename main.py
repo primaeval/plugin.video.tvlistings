@@ -266,11 +266,85 @@ def store_channels():
         #log2(channels[name])
     #cache.sync()
     
+    #http://my.tvguide.co.uk/titlesearch.asp?title=doctor%20who
+
+@plugin.route('/search/<name>')
+def search_for(name):
+    if not name:
+        return
+    url = 'http://my.tvguide.co.uk/titlesearch.asp?title=%s' % name
+    
+    r = requests.get(url)
+    html = r.text
+    #log2(html)
+    #return
+    
+    tables = html.split('<span class="tvchannel">')
+    items = []
+    for table in tables:
+        log(table)
+        #continue
+        #channel = ''
+        #date = ''
+        match = re.search(r'<span class="datetime">(.*?)</span>',table,flags=(re.DOTALL | re.MULTILINE))
+        if match:
+            log(match)
+            #continue
+            match = re.search(r'(.*?)</span>.*?<span class="datetime">(.*?)</span><br>.*?<b><span class="season">Season (.*?) </span>.*?<span class="season">Episode (.*?) of (.*?)</span>',table,flags=(re.DOTALL | re.MULTILINE))
+            if match:
+                channel = match.group(1)
+                date = match.group(2)
+                season = match.group(3)
+                episode = match.group(4)
+                total = match.group(5)
+                
+                log(channel)
+                log(date)
+                log(season)
+                log(episode)
+                log(total)
+                continue
+        #continue
+        match = re.search(r'<span property="description"',table,flags=(re.DOTALL | re.MULTILINE))
+        if match:
+            match = re.search(r'(.*?)</span>.*?<span property="description" content="(.*?)"></span>',table,flags=(re.DOTALL | re.MULTILINE))
+            if match:
+                episode_title =  match.group(1)
+                plot =  match.group(2)
+                log(episode_title)
+                log(plot)
+                #continue
+                label = "[COLOR yellow][B]%s[/B][/COLOR] %s [COLOR red][B]%sx%s[/B][/COLOR] [COLOR orange][B]%s[/B][/COLOR] %s" % (channel,date,season,episode,episode_title,plot)
+                item = {'label':label}
+                items.append(item)
+
+            
+        #continue
+
+   
+
+    return items
+    #plugin.set_content('episodes')    
+    #plugin.set_view_mode(51)
+    return items
+    
+    
+@plugin.route('/search')
+def search():
+    dialog = xbmcgui.Dialog()
+    name = dialog.input('Search for programme', type=xbmcgui.INPUT_ALPHANUM)
+    if name:
+        return search_for(name)
     
 @plugin.route('/')
 def index():
 
     items = [
+    {
+        'label': 'Search',
+        'path': plugin.url_for('search' ),
+
+    } ,      
     {
         'label': 'Now Next After',
         'path': plugin.url_for('now_next' ),
