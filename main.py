@@ -74,13 +74,35 @@ def play(channel,title,season,episode):
     channel_number = plugin.get_storage('channel_number')
     items = play_channel(channel_number[channel])
     tvdb_id = get_tvdb_id(title)
-    meta_url = "plugin://plugin.video.meta/tv/play/%s/%s/%s/%s" % (tvdb_id,season,episode,'select')
-    log(meta_url)
-    items.append({
-    'label': '[COLOR orange][B]%s[/B][/COLOR] [COLOR red][B]%sx%s[/B][/COLOR] [COLOR grey](tvdb:%s)[/COLOR]' % (title,season,episode,tvdb_id),
-    'path': meta_url,
-    'is_playable': True,
-     })
+    if tvdb_id:
+        if season and episode:
+            meta_url = "plugin://plugin.video.meta/tv/play/%s/%s/%s/%s" % (tvdb_id,season,episode,'select')
+            items.append({
+            'label': '[COLOR orange][B]%s[/B][/COLOR] [COLOR red][B]S%sE%s[/B][/COLOR] [COLOR grey](tvdb:%s)[/COLOR]' % (title,season,episode,tvdb_id),
+            'path': meta_url,
+            'is_playable': True,
+             })
+        if season:
+            meta_url = "plugin://plugin.video.meta/tv/tvdb/%s/%s" % (tvdb_id,season)
+            items.append({
+            'label': '[COLOR orange][B]%s[/B][/COLOR] [COLOR red][B]S%s[/B][/COLOR] [COLOR grey](tvdb:%s)[/COLOR]' % (title,season,tvdb_id),
+            'path': meta_url,
+            'is_playable': False,
+             })         
+        meta_url = "plugin://plugin.video.meta/tv/tvdb/%s" % (tvdb_id)
+        items.append({
+        'label': '[COLOR orange][B]%s[/B][/COLOR] [COLOR grey](tvdb:%s)[/COLOR]' % (title,tvdb_id),
+        'path': meta_url,
+        'is_playable': False,
+         })
+    else:
+        meta_url = "plugin://plugin.video.meta/tv/search_term/%s/1" % (title)
+        items.append({
+        'label': '[COLOR orange][B]%s[/B][/COLOR] [COLOR grey](tvdb:?)[/COLOR]' % (title),
+        'path': meta_url,
+        'is_playable': False,
+         })         
+    log(items)     
     return items
 
 @plugin.route('/play_channel/<name>')
@@ -125,8 +147,8 @@ def listing(channel):
         if match:
             detail = url=match.group(1).encode("utf8")
             
-        season = ''
-        episode = ''
+        season = '0'
+        episode = '0'
         match = re.search(r'<b><span class="season">Season (.*?) </span> <span class="season">Episode (.*?) of (.*?)</span>',table,flags=(re.DOTALL | re.MULTILINE))
         if match:
             season = match.group(1)
