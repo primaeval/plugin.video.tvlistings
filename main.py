@@ -247,24 +247,24 @@ def store_channels():
     channels = plugin.get_storage('channels')
     #channels['BBC1 London'] = 'plugin://plugin.video.iplayerwww/?url=bbc_one_hd&mode=203&name=BBC+One&iconimage=special%3A%2F%2Fhome%2Faddons%2Fplugin.video.iplayerwww%2Fmedia%2Fbbc_one.png&description=&subtitles_url=&logged_in=False'
     
-    f = xbmcvfs.File('special://home/addons/plugin.video.tvlistings/resources/channels.ini')
-    b = f.read()
-    log2(b)
-    f.close()
-    items = re.findall(r'(.*?)=(.*?)\r\n',b)
-    #count = 0
-    for item in items:
-        log2(item)
-        name = item[0]
-        url = item[1]
-        channels[name] = url
-        #if count > 40:
-        #    return
-        #count = count + 1
-    #for name in channels:
-        #log2(name)
-        #log2(channels[name])
-    #cache.sync()
+    ini_files = [plugin.get_setting('ini_file1'),plugin.get_setting('ini_file2')]
+    
+    for ini in ini_files:
+        log(ini)
+        try:
+            f = xbmcvfs.File(ini)
+            b = f.read()
+            log2(b)
+            f.close()
+            items = re.findall(r'(.*?)=(.*?)\r\n',b)
+            for item in items:
+                log2(item)
+                name = item[0]
+                url = item[1]
+                if not name.startswith('#'):
+                    channels[name] = url
+        except:
+            pass
     
     #http://my.tvguide.co.uk/titlesearch.asp?title=doctor%20who
 
