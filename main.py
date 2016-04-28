@@ -149,9 +149,40 @@ def play_channel(name,number):
     items.append(item)
         
     return items
-  
+    
+def local_time(ttime):
+    from datetime import datetime
+    from dateutil import tz
+    
+
+    from_zone = tz.gettz('UTC')
+    log2(from_zone)
+    to_zone = tz.gettz()
+    match = re.search(r'(.{1,2}):(.{2})(.{2})',ttime)
+    if match:
+        hour = int(match.group(1))
+        min = int(match.group(2))
+        ampm = match.group(3)
+        if ampm == "pm":
+            if hour < 12:
+                hour = hour + 12
+                hour = hour % 24
+        else:
+            if hour == 12:
+                hour = 0
+        log(hour)
+        utc = datetime.utcnow()
+        utc = utc.replace(hour=hour,minute=min,tzinfo=from_zone)
+
+        local = utc.astimezone(to_zone)
+        ttime = "%02d:%02d" % (local.hour,local.minute)
+
+    return ttime
+                
 @plugin.route('/listing/<name>/<number>')
 def listing(name,number):
+
+
     #r = requests.get('http://my.tvguide.co.uk/channellisting.asp?ch=%s&cTime=4/27/2016%%208:00:00%%20AM&thisTime=&thisDay=' % channel)
     r = requests.get('http://my.tvguide.co.uk/channellisting.asp?ch=%s' % number)
     html = r.text
@@ -184,14 +215,17 @@ def listing(name,number):
         if match:
             genre = match.group(1)
             
-        time = ''
+        ttime = ''
         title = ''
         plot = ''
         match = re.search(r'<span class="season">(.*?) </span>.*?<span class="programmeheading" >(.*?)</span>.*?<span class="programmetext">(.*?)</span>',table,flags=(re.DOTALL | re.MULTILINE))
         if match:
-            time = match.group(1)
+            ttime = match.group(1)
             title = match.group(2)
             plot = match.group(3)
+            
+            ttime = local_time(ttime)
+
             
         path = plugin.url_for('play', channel=number,title=title.encode("utf8"),season=season,episode=episode)
         
@@ -199,14 +233,14 @@ def listing(name,number):
             
             if  plugin.get_setting('channel_name') == 'true':
                 if plugin.get_setting('show_plot') == 'true':
-                    label = "[COLOR yellow][B]%s[/B][/COLOR] %s [COLOR orange][B]%s[/B][/COLOR] %s" % (name,time,title,plot)
+                    label = "[COLOR yellow][B]%s[/B][/COLOR] %s [COLOR orange][B]%s[/B][/COLOR] %s" % (name,ttime,title,plot)
                 else:
-                    label = "[COLOR yellow][B]%s[/B][/COLOR] %s [COLOR orange][B]%s[/B][/COLOR]" % (name,time,title)
+                    label = "[COLOR yellow][B]%s[/B][/COLOR] %s [COLOR orange][B]%s[/B][/COLOR]" % (name,ttime,title)
             else:
                 if plugin.get_setting('show_plot') == 'true':
-                    label = "%s [COLOR orange][B]%s[/B][/COLOR] %s" % (time,title,plot)
+                    label = "%s [COLOR orange][B]%s[/B][/COLOR] %s" % (ttime,title,plot)
                 else:
-                    label = "%s [COLOR orange][B]%s[/B][/COLOR]" % (time,title)
+                    label = "%s [COLOR orange][B]%s[/B][/COLOR]" % (ttime,title)
             item = {'label': label,  'thumbnail': thumb, 'info': {'plot':plot, 'season':season, 'episode':episode, 'genre':genre}}
             if path:
                 item['path'] = path
@@ -240,15 +274,28 @@ def channels():
         for channel in channels:
             #log(channel)
             channel_number[channel[0]] = channel[1]
-            if channel[0] in favourite_channels:
+            if plugin.get_setting('ignore_favourites') == 'true':
                 items.append({'label': channel[1], 'path': plugin.url_for('listing', name=channel[1].encode("utf8"),number=channel[0])})
+            else:
+                if channel[0] in favourite_channels:
+                    items.append({'label': channel[1], 'path': plugin.url_for('listing', name=channel[1].encode("utf8"),number=channel[0])})
     else:
+        channel_number = plugin.get_storage('channel_number')
         favourite_channels = plugin.get_storage('favourite_channels')
-        for number in favourite_channels:
-            name = favourite_channels[number]
-            items.append({'label': name, 'path': plugin.url_for('listing', name=name.encode("utf8"),number=number)})
-    plugin.set_view_mode(51)
-    return items
+        if plugin.get_setting('ignore_favourites') == 'true':
+            for number in channel_number:
+                name = channel_number[number]
+                items.append({'label': name, 'path': plugin.url_for('listing', name=name.encode("utf8"),number=number)})
+        else:
+            for number in favourite_channels:
+                name = favourite_channels[number]
+                items.append({'label': name, 'path': plugin.url_for('listing', name=name.encode("utf8"),number=number)})
+
+                plugin.set_view_mode(51)
+                
+    sorted_items = sorted(items, key=lambda item: item['label'])
+    return sorted_items                
+
 
     
 @plugin.route('/now_next')
@@ -258,7 +305,7 @@ def now_next():
     
     channels = html.split('<div class="div-channel-progs">')
     videos = []
-    
+    favourite_channels = plugin.get_storage('favourite_channels')
     items = []
     for channel in channels:
         img_url = ''
@@ -282,11 +329,11 @@ def now_next():
         after_program = ''
         match = re.search(r'<div class="div-time">(.*?)</div>.*?<div class="div-title".*?">(.*?)</div>.*?<div class="div-time">(.*?)</div>.*?<div class="div-title".*?">(.*?)</div>.*?<div class="div-time">(.*?)</div>.*?<div class="div-title".*?">(.*?)</div>', channel,flags=(re.DOTALL | re.MULTILINE))
         if match:
-            start = match.group(1)
+            start = local_time(match.group(1))
             program = match.group(2)
-            next_start = match.group(3)
+            next_start = local_time(match.group(3))
             next_program = match.group(4)
-            after_start = match.group(5)
+            after_start = local_time(match.group(5))
             after_program = match.group(6)            
             match = re.search('<img.*?>&nbsp;(.*)',program)
             if match:
@@ -311,8 +358,13 @@ def now_next():
         #    item['is_playable'] = True
         #    item['path'] = channel_player[name]
         
-        items.append(item)
-        
+        if plugin.get_setting('ignore_favourites') == 'false':
+            if channel_number in favourite_channels:
+                items.append(item)
+        else:
+            items.append(item)
+       
+       
     plugin.set_view_mode(51)
     return items
    
@@ -475,12 +527,7 @@ def search():
 @plugin.route('/')
 def index():
 
-    items = [
-    {
-        'label': 'Search',
-        'path': plugin.url_for('search' ),
-
-    } ,      
+    items = [  
     {
         'label': 'Now Next After',
         'path': plugin.url_for('now_next' ),
@@ -490,12 +537,7 @@ def index():
         'label': 'Channel Listings',
         'path': plugin.url_for('channels' ),
 
-    } ,     
-    {
-        'label': 'Store Channels',
-        'path': plugin.url_for('store_channels' ),
-
-    } ,     
+    } ,        
     {
         'label': 'Set Favourites',
         'path': plugin.url_for('set_favourites' ),
