@@ -221,25 +221,32 @@ def listing(name,number):
     
 @plugin.route('/channels')
 def channels():
-    r = requests.get('http://www.tvguide.co.uk/')
-    html = r.text
+    items = []
+    if plugin.get_setting('channels_reload') == 'true':
+        plugin.set_setting('channels_reload','false')
+        r = requests.get('http://www.tvguide.co.uk/')
+        html = r.text
     #log2(html)
     
-    match = re.search(r'<select name="channelid">(.*?)</select>',html,flags=(re.DOTALL | re.MULTILINE))
+        match = re.search(r'<select name="channelid">(.*?)</select>',html,flags=(re.DOTALL | re.MULTILINE))
     #log(match)
-    if not match:
-        return
+        if not match:
+            return
         
-    channels = re.findall(r'<option value=(.*?)>(.*?)</option>',match.group(1),flags=(re.DOTALL | re.MULTILINE))
-    items = []
-    channel_number = plugin.get_storage('channel_number')
-    favourite_channels = plugin.get_storage('favourite_channels')
-    for channel in channels:
-        #log(channel)
-        channel_number[channel[0]] = channel[1]
-        if channel[0] in favourite_channels:
-            items.append({'label': channel[1], 'path': plugin.url_for('listing', name=channel[1].encode("utf8"),number=channel[0])})
-        
+        channels = re.findall(r'<option value=(.*?)>(.*?)</option>',match.group(1),flags=(re.DOTALL | re.MULTILINE))
+
+        channel_number = plugin.get_storage('channel_number')
+        favourite_channels = plugin.get_storage('favourite_channels')
+        for channel in channels:
+            #log(channel)
+            channel_number[channel[0]] = channel[1]
+            if channel[0] in favourite_channels:
+                items.append({'label': channel[1], 'path': plugin.url_for('listing', name=channel[1].encode("utf8"),number=channel[0])})
+    else:
+        favourite_channels = plugin.get_storage('favourite_channels')
+        for number in favourite_channels:
+            name = favourite_channels[number]
+            items.append({'label': name, 'path': plugin.url_for('listing', name=name.encode("utf8"),number=number)})
     plugin.set_view_mode(51)
     return items
 

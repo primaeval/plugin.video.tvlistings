@@ -6,6 +6,7 @@
 <setting id="ini_file1" label="First stream urls .ini file" type="file" default="special://home/addons/plugin.video.tvlistings/resources/addons1.ini" />
 <setting id="ini_file2" label="Second stream urls .ini file" type="file" default="special://userdata/addon_data/plugin.video.tvlistings/addons2.ini" />
 <setting id="ini_reload" label="(Re)load .ini files" type="bool" default="true" />
+<setting id="channels_reload" label="(Re)load channel list" type="bool" default="true" />
 </category>
 
 </settings>
