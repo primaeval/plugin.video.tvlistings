@@ -1,4 +1,4 @@
-from xbmcswift2 import Plugin
+from xbmcswift2 import Plugin,ListItem
 import xbmc,xbmcaddon,xbmcvfs,xbmcgui
 import os, sys, subprocess
 from subprocess import Popen
@@ -407,16 +407,17 @@ def add_favourite(name,number):
 def remove_favourite(name,number):
     favourite_channels = plugin.get_storage('favourite_channels')
     favourite_channels.pop(number)
-    
+  
 @plugin.route('/set_favourites')
 def set_favourites():
     top_items = []
-    top_items.append({'label': '[B]ALL[/B]','path': plugin.url_for('all_favourites')})
-    top_items.append({'label': '[B]NONE[/B]','path': plugin.url_for('no_favourites')})
+    top_items.append({'label': '[COLOR green][B]ALL[/B][/COLOR]','path': plugin.url_for('all_favourites')})
+    top_items.append({'label': '[COLOR red][B]NONE[/B][/COLOR]','path': plugin.url_for('no_favourites')})
     
     channel_number = plugin.get_storage('channel_number')
     favourite_channels = plugin.get_storage('favourite_channels')
     items = []
+    selected =  plugin.get_setting('selected')
     for channel in channel_number:
         number = channel
         name = channel_number[number]
@@ -426,10 +427,10 @@ def set_favourites():
         else:
             label = '%s' % name
             path = plugin.url_for('add_favourite', name=name.encode("utf8"), number=number)
-        
+
         item = {'label':label}
         item['path'] = path 
-        
+        item['thumbnail'] = "http://my.tvguide.co.uk/channel_logos/60x35/%s.png" % number
         items.append(item)
         
     sorted_items = sorted(items, key=lambda item: re.sub('\[.*?\]','',item['label']))
