@@ -307,8 +307,8 @@ def channels(favourites):
                 name = channel_number[number]
                 items.append(channel_listing_item(name,number))
 
-    #plugin.set_view_mode(51)
-    log2(items)            
+    plugin.set_view_mode(51)
+    #log2(items)            
     sorted_items = sorted(items, key=lambda item: item['label'])
     return sorted_items                
 
@@ -384,7 +384,7 @@ def now_next(favourites):
             items.append(item)
        
        
-    #plugin.set_view_mode(51)
+    plugin.set_view_mode(51)
     return items
    
 @plugin.route('/all_favourites')
@@ -549,7 +549,7 @@ def index():
 
     items = [  
     {
-        'label': '[COLOR green][B]Favourites[/B][/COLOR]: [COLOR yellow]All Next After[/COLOR]',
+        'label': '[COLOR green][B]Favourites[/B][/COLOR]: [COLOR yellow]All Next After[/COLOR] popular',
         'path': plugin.url_for('now_next', favourites='true' ),
 
     } ,  
@@ -559,7 +559,7 @@ def index():
 
     } ,      
     {
-        'label': '[COLOR red][B]All[/B][/COLOR]: [COLOR yellow]Now Next After[/COLOR]',
+        'label': '[COLOR red][B]All[/B][/COLOR]: [COLOR yellow]Now Next After[/COLOR] popular',
         'path': plugin.url_for('now_next', favourites='false'),
 
     } ,  
@@ -569,7 +569,7 @@ def index():
 
     } ,        
     {
-        'label': '[B]Favourites[/B]: Set',
+        'label': '[B]Favourites[/B]: Toggle',
         'path': plugin.url_for('set_favourites' ),
 
     } ,     
