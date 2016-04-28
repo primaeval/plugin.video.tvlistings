@@ -304,7 +304,7 @@ def channels():
                 thumb = "http://my.tvguide.co.uk/channel_logos/60x35/%s.png" % number
                 items.append({'label': name, 'thumbnail': thumb, 'path': plugin.url_for('listing', name=name.encode("utf8"),number=number)})
 
-                plugin.set_view_mode(51)
+    #plugin.set_view_mode(51)
                 
     sorted_items = sorted(items, key=lambda item: item['label'])
     return sorted_items                
