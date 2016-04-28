@@ -73,7 +73,9 @@ def play(channel,title,season,episode):
     log2(channel)
     channel_number = plugin.get_storage('channel_number')
     items = play_channel(channel_number[channel])
-    tvdb_id = get_tvdb_id(title)
+    tvdb_id = ''
+    if int(season) > 0 and int(episode) > 0:
+        tvdb_id = get_tvdb_id(title)
     if tvdb_id:
         if season and episode:
             meta_url = "plugin://plugin.video.meta/tv/play/%s/%s/%s/%s" % (tvdb_id,season,episode,'select')
@@ -96,12 +98,23 @@ def play(channel,title,season,episode):
         'is_playable': False,
          })
     else:
-        meta_url = "plugin://plugin.video.meta/tv/search_term/%s/1" % (title)
-        items.append({
-        'label': '[COLOR orange][B]%s[/B][/COLOR] [COLOR grey](tvdb:?)[/COLOR]' % (title),
-        'path': meta_url,
-        'is_playable': False,
-         })         
+        match = re.search(r'(.*?)\(([0-9]*)\)$',title)
+        if match:
+            movie = match.group(1)
+            year =  match.group(2) #TODO: Meta doesn't support year yet
+            meta_url = "plugin://plugin.video.meta/movies/search_term/%s/1" % (movie)
+            items.append({
+            'label': '[COLOR orange][B]%s[/B][/COLOR] [COLOR grey](movie)[/COLOR]' % (title),
+            'path': meta_url,
+            'is_playable': False,
+             })              
+        else:
+            meta_url = "plugin://plugin.video.meta/tv/search_term/%s/1" % (title)
+            items.append({
+            'label': '[COLOR orange][B]%s[/B][/COLOR] [COLOR grey](tvdb:?)[/COLOR]' % (title),
+            'path': meta_url,
+            'is_playable': False,
+             }) 
     log(items)     
     return items
 
@@ -129,7 +142,8 @@ def play_channel(name):
   
 @plugin.route('/listing/<channel>')
 def listing(channel):
-    r = requests.get('http://my.tvguide.co.uk/channellisting.asp?ch=%s&cTime=4/27/2016%%208:00:00%%20AM&thisTime=&thisDay=' % channel)
+    #r = requests.get('http://my.tvguide.co.uk/channellisting.asp?ch=%s&cTime=4/27/2016%%208:00:00%%20AM&thisTime=&thisDay=' % channel)
+    r = requests.get('http://my.tvguide.co.uk/channellisting.asp?ch=%s' % channel)
     html = r.text
     #log2(html)
     #return
@@ -168,8 +182,7 @@ def listing(channel):
             title = match.group(2)
             plot = match.group(3)
             
-        if title and season and episode:
-            path = plugin.url_for('play', channel=channel,title=title,season=season,episode=episode)
+        path = plugin.url_for('play', channel=channel,title=title.encode("utf8"),season=season,episode=episode)
         
         if title:
             label = "%s [COLOR orange][B]%s[/B][/COLOR] %s" % (time,title,plot)
