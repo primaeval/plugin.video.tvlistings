@@ -68,18 +68,20 @@ def get_tvdb_id(name):
         tvdb_id = tvdb_match.group(1)
     return tvdb_id
   
-@plugin.route('/play/<title>/<season>/<episode>')
-def play(title,season,episode):
+@plugin.route('/play/<channel>/<title>/<season>/<episode>')
+def play(channel,title,season,episode):
+    log2(channel)
+    channel_number = plugin.get_storage('channel_number')
+    items = play_channel(channel_number[channel])
     tvdb_id = get_tvdb_id(title)
     meta_url = "plugin://plugin.video.meta/tv/play/%s/%s/%s/%s" % (tvdb_id,season,episode,'select')
     log(meta_url)
-    items = [
-    {'label': '%s (%s) %sx%s' % (title,tvdb_id,season,episode),
-     'path': meta_url,
-     'is_playable': True,
-     }
-    ]
-    return plugin.finish(items)
+    items.append({
+    'label': '[COLOR orange][B]%s[/B][/COLOR] [COLOR red][B]%sx%s[/B][/COLOR] [COLOR grey](tvdb:%s)[/COLOR]' % (title,season,episode,tvdb_id),
+    'path': meta_url,
+    'is_playable': True,
+     })
+    return items
 
 @plugin.route('/play_channel/<name>')
 def play_channel(name):
@@ -95,7 +97,7 @@ def play_channel(name):
             continue
         path = channels[name]
         item = {
-        'label': '[COLOR yellow][B]%s[/B][/COLOR]  [COLOR grey][%s][/COLOR]' % (name,addon),
+        'label': '[COLOR yellow][B]%s[/B][/COLOR] [COLOR grey][%s][/COLOR]' % (name,addon),
         'path': path,
         'is_playable': True,
         }
@@ -145,9 +147,7 @@ def listing(channel):
             plot = match.group(3)
             
         if title and season and episode:
-            path = plugin.url_for('play', title=title,season=season,episode=episode)
-        #tvdb_id = get_tvdb_id(title)
-        #meta_url = "plugin://plugin.video.meta/tv/play/%s/%s/%s/%s" % (tvdb_id,season,episode,'select')
+            path = plugin.url_for('play', channel=channel,title=title,season=season,episode=episode)
         
         if title:
             label = "%s [COLOR orange][B]%s[/B][/COLOR] %s" % (time,title,plot)
@@ -176,8 +176,10 @@ def channels():
         
     channels = re.findall(r'<option value=(.*?)>(.*?)</option>',match.group(1),flags=(re.DOTALL | re.MULTILINE))
     items = []
+    channel_number = plugin.get_storage('channel_number')
     for channel in channels:
         #log(channel)
+        channel_number[channel[0]] = channel[1]
         items.append({'label': channel[1], 'path': plugin.url_for('listing', channel=channel[0]),})
         
     plugin.set_view_mode(51)
