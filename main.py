@@ -233,10 +233,12 @@ def channels():
     channels = re.findall(r'<option value=(.*?)>(.*?)</option>',match.group(1),flags=(re.DOTALL | re.MULTILINE))
     items = []
     channel_number = plugin.get_storage('channel_number')
+    favourite_channels = plugin.get_storage('favourite_channels')
     for channel in channels:
         #log(channel)
         channel_number[channel[0]] = channel[1]
-        items.append({'label': channel[1], 'path': plugin.url_for('listing', name=channel[1].encode("utf8"),number=channel[0])})
+        if channel[0] in favourite_channels:
+            items.append({'label': channel[1], 'path': plugin.url_for('listing', name=channel[1].encode("utf8"),number=channel[0])})
         
     plugin.set_view_mode(51)
     return items
@@ -306,7 +308,59 @@ def now_next():
         
     plugin.set_view_mode(51)
     return items
+   
+@plugin.route('/all_favourites')
+def all_favourites():
+    favourite_channels = plugin.get_storage('favourite_channels')
+    channel_number = plugin.get_storage('channel_number')
+    for channel in channel_number:
+        favourite_channels[channel] = channel_number[channel]
+    
+@plugin.route('/no_favourites')
+def no_favourites():
+    favourite_channels = plugin.get_storage('favourite_channels')
+    favourite_channels.clear()
+    #or channel in favourite_channels:
+    #   favourite_channels.pop(channel)
+    
+@plugin.route('/add_favourite/<name>/<number>')
+def add_favourite(name,number):
+    favourite_channels = plugin.get_storage('favourite_channels')
+    favourite_channels[number] = name
 
+@plugin.route('/remove_favourite/<name>/<number>')
+def remove_favourite(name,number):
+    favourite_channels = plugin.get_storage('favourite_channels')
+    favourite_channels.pop(number)
+    
+@plugin.route('/set_favourites')
+def set_favourites():
+    top_items = []
+    top_items.append({'label': '[B]ALL[/B]','path': plugin.url_for('all_favourites')})
+    top_items.append({'label': '[B]NONE[/B]','path': plugin.url_for('no_favourites')})
+    
+    channel_number = plugin.get_storage('channel_number')
+    favourite_channels = plugin.get_storage('favourite_channels')
+    items = []
+    for channel in channel_number:
+        number = channel
+        name = channel_number[number]
+        if channel in favourite_channels:
+            label = '[COLOR yellow][B]%s[/B][/COLOR]' % name
+            path = plugin.url_for('remove_favourite', name=name.encode("utf8"), number=number)
+        else:
+            label = '%s' % name
+            path = plugin.url_for('add_favourite', name=name.encode("utf8"), number=number)
+        
+        item = {'label':label}
+        item['path'] = path 
+        
+        items.append(item)
+        
+    sorted_items = sorted(items, key=lambda item: re.sub('\[.*?\]','',item['label']))
+    top_items.extend(sorted_items)
+    return top_items
+    
 @plugin.route('/store_channels')
 def store_channels():
     #channels = plugin.get_storage('channels')
@@ -434,7 +488,12 @@ def index():
         'label': 'Store Channels',
         'path': plugin.url_for('store_channels' ),
 
-    } ,         
+    } ,     
+    {
+        'label': 'Set Favourites',
+        'path': plugin.url_for('set_favourites' ),
+
+    } ,     
     ]
     sorted_items = sorted(items, key=lambda item: item['label'])
     return sorted_items
