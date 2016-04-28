@@ -554,7 +554,7 @@ def index():
 
     } ,  
     {
-        'label': '[COLOR green][B]Favourites[/B][/COLOR]: [COLOR orange]Channel Listings[/COLOR]',
+        'label': '[COLOR green][B]Favourites[/B][/COLOR]: [COLOR orange]Channel Listings[/COLOR] full',
         'path': plugin.url_for('channels', favourites='true' ),
 
     } ,      
@@ -564,7 +564,7 @@ def index():
 
     } ,  
     {
-        'label': '[COLOR red][B]All[/B][/COLOR]: [COLOR orange]Channel Listings[/COLOR]',
+        'label': '[COLOR red][B]All[/B][/COLOR]: [COLOR orange]Channel Listings[/COLOR] full',
         'path': plugin.url_for('channels', favourites='false'),
 
     } ,        
