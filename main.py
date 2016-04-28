@@ -151,7 +151,7 @@ def play_channel(name,number):
     return items
     
 def local_time(ttime):
-    from datetime import datetime
+    from datetime import datetime, timedelta
     from dateutil import tz
     
 
@@ -170,11 +170,20 @@ def local_time(ttime):
         else:
             if hour == 12:
                 hour = 0
+        
         log(hour)
         utc = datetime.utcnow()
-        utc = utc.replace(hour=hour,minute=min,tzinfo=from_zone)
+        #utc = utc.replace(hour=hour,minute=min,tzinfo=from_zone)
+        utc = utc.replace(hour=hour,minute=min)
 
-        local = utc.astimezone(to_zone)
+        # get the local timezone offset in seconds
+        is_dst = time.daylight and time.localtime().tm_isdst > 0
+        utc_offset = - (time.altzone if is_dst else time.timezone) - 3600
+        td_local = timedelta(seconds=utc_offset)
+
+        local = utc + td_local
+        
+        #local = utc.astimezone(to_zone)
         ttime = "%02d:%02d" % (local.hour,local.minute)
 
     return ttime
