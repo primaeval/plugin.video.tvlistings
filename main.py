@@ -196,10 +196,17 @@ def listing(name,number):
         path = plugin.url_for('play', channel=number,title=title.encode("utf8"),season=season,episode=episode)
         
         if title:
+            
             if  plugin.get_setting('channel_name') == 'true':
-                label = "[COLOR yellow][B]%s[/B][/COLOR] %s [COLOR orange][B]%s[/B][/COLOR] %s" % (name,time,title,plot)
+                if plugin.get_setting('show_plot') == 'true':
+                    label = "[COLOR yellow][B]%s[/B][/COLOR] %s [COLOR orange][B]%s[/B][/COLOR] %s" % (name,time,title,plot)
+                else:
+                    label = "[COLOR yellow][B]%s[/B][/COLOR] %s [COLOR orange][B]%s[/B][/COLOR]" % (name,time,title)
             else:
-                label = "%s [COLOR orange][B]%s[/B][/COLOR] %s" % (time,title,plot)
+                if plugin.get_setting('show_plot') == 'true':
+                    label = "%s [COLOR orange][B]%s[/B][/COLOR] %s" % (time,title,plot)
+                else:
+                    label = "%s [COLOR orange][B]%s[/B][/COLOR]" % (time,title)
             item = {'label': label,  'thumbnail': thumb, 'info': {'plot':plot, 'season':season, 'episode':episode, 'genre':genre}}
             if path:
                 item['path'] = path
