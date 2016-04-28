@@ -262,6 +262,11 @@ def listing(name,number):
     plugin.set_view_mode(51)
     return items
     
+def channel_listing_item(name,number):
+    thumb = "http://my.tvguide.co.uk/channel_logos/60x35/%s.png" % number
+    item = {'label': name, 'thumbnail': thumb, 'path': plugin.url_for('listing', name=name.encode("utf8"),number=number)}
+    return item
+    
 @plugin.route('/channels')
 def channels():
     items = []
@@ -269,10 +274,10 @@ def channels():
         plugin.set_setting('channels_reload','false')
         r = requests.get('http://www.tvguide.co.uk/')
         html = r.text
-    #log2(html)
+        #log2(html)
     
         match = re.search(r'<select name="channelid">(.*?)</select>',html,flags=(re.DOTALL | re.MULTILINE))
-    #log(match)
+        #log(match)
         if not match:
             return
         
@@ -281,31 +286,29 @@ def channels():
         channel_number = plugin.get_storage('channel_number')
         favourite_channels = plugin.get_storage('favourite_channels')
         for channel in channels:
-            #log(channel)
-            channel_number[channel[0]] = channel[1]
+            name = channels[1]
+            number = channels.group[0]
+            #log2(channel)
+            channel_number[number] = name
             if plugin.get_setting('ignore_favourites') == 'true':
-                thumb = "http://my.tvguide.co.uk/channel_logos/60x35/%s.png" % channel[0]
-                items.append({'label': channel[1], 'thumbnail': thumb, 'path': plugin.url_for('listing', name=channel[1].encode("utf8"),number=channel[0])})
+                items.append(channel_listing_item(name,number))
             else:
-                if channel[0] in favourite_channels:
-                    thumb = "http://my.tvguide.co.uk/channel_logos/60x35/%s.png" % channel[0]
-                    items.append({'label': channel[1], 'thumbnail': thumb, 'path': plugin.url_for('listing', name=channel[1].encode("utf8"),number=channel[0])})
+                if number in favourite_channels:
+                    items.append(channel_listing_item(name,number))
     else:
         channel_number = plugin.get_storage('channel_number')
         favourite_channels = plugin.get_storage('favourite_channels')
         if plugin.get_setting('ignore_favourites') == 'true':
             for number in channel_number:
                 name = channel_number[number]
-                thumb = "http://my.tvguide.co.uk/channel_logos/60x35/%s.png" % number
-                items.append({'label': name, 'thumbnail': thumb, 'path': plugin.url_for('listing', name=name.encode("utf8"),number=number)})
+                items.append(channel_listing_item(name,number))
         else:
             for number in favourite_channels:
                 name = favourite_channels[number]
-                thumb = "http://my.tvguide.co.uk/channel_logos/60x35/%s.png" % number
-                items.append({'label': name, 'thumbnail': thumb, 'path': plugin.url_for('listing', name=name.encode("utf8"),number=number)})
+                items.append(channel_listing_item(name,number))
 
     #plugin.set_view_mode(51)
-                
+    log2(items)            
     sorted_items = sorted(items, key=lambda item: item['label'])
     return sorted_items                
 
