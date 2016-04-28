@@ -83,18 +83,24 @@ def play(title,season,episode):
 
 @plugin.route('/play_channel/<name>')
 def play_channel(name):
-    channel_player = plugin.get_storage('channels')
-    if not name in channel_player:
-        return
-    path = channel_player[name]
-    #xbmc.Player().play(path)
-    #return plugin.set_resolved_url(path)
-    items = [
-    {'label': '%s %s' % (name,path),
-     'path': path,
-     'is_playable': True,
-     }
-    ]
+    if plugin.get_setting('ini_reload') == 'true':
+        store_channels()
+        plugin.set_setting('ini_reload','false')
+    
+    addons = plugin.get_storage('addons')
+    items = []
+    for addon in addons:
+        channels = plugin.get_storage(addon)
+        if not name in channels:
+            continue
+        path = channels[name]
+        item = {
+        'label': '[COLOR yellow][B]%s[/B][/COLOR]  [COLOR grey][%s][/COLOR]' % (name,addon),
+        'path': path,
+        'is_playable': True,
+        }
+        items.append(item)
+        
     return items
   
 @plugin.route('/listing/<channel>')
@@ -116,8 +122,6 @@ def listing(channel):
         path = ''
         if match:
             detail = url=match.group(1).encode("utf8")
-            
-        
             
         season = ''
         episode = ''
@@ -244,7 +248,7 @@ def now_next():
 
 @plugin.route('/store_channels')
 def store_channels():
-    channels = plugin.get_storage('channels')
+    #channels = plugin.get_storage('channels')
     #channels['BBC1 London'] = 'plugin://plugin.video.iplayerwww/?url=bbc_one_hd&mode=203&name=BBC+One&iconimage=special%3A%2F%2Fhome%2Faddons%2Fplugin.video.iplayerwww%2Fmedia%2Fbbc_one.png&description=&subtitles_url=&logged_in=False'
     
     ini_files = [plugin.get_setting('ini_file1'),plugin.get_setting('ini_file2')]
@@ -253,20 +257,30 @@ def store_channels():
         log(ini)
         try:
             f = xbmcvfs.File(ini)
-            b = f.read()
-            log2(b)
+            items = f.read().splitlines()
+            log2(items)
             f.close()
-            items = re.findall(r'(.*?)=(.*?)\r\n',b)
+            addon = 'nothing'
             for item in items:
-                log2(item)
-                name = item[0]
-                url = item[1]
-                if not name.startswith('#'):
-                    channels[name] = url
+                #log2(item)
+                if item.startswith('['):
+                    addon = item.strip('[] \t')
+                    #log(addon)
+                elif item.startswith('#'):
+                    pass
+                else:
+                    name_url = item.split('=',1)
+                    if len(name_url) == 2:
+                        name = name_url[0]
+                        url = name_url[1]
+                        channels = plugin.get_storage(addon)
+                        channels[name] = url
+                        addons = plugin.get_storage('addons')
+                        addons[addon] = addon
+
         except:
             pass
-    
-    #http://my.tvguide.co.uk/titlesearch.asp?title=doctor%20who
+
 
 @plugin.route('/search/<name>')
 def search_for(name):
