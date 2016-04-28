@@ -267,8 +267,8 @@ def channel_listing_item(name,number):
     item = {'label': name, 'thumbnail': thumb, 'path': plugin.url_for('listing', name=name.encode("utf8"),number=number)}
     return item
     
-@plugin.route('/channels')
-def channels():
+@plugin.route('/channels/<favourites>')
+def channels(favourites):
     items = []
     if plugin.get_setting('channels_reload') == 'true':
         plugin.set_setting('channels_reload','false')
@@ -286,11 +286,11 @@ def channels():
         channel_number = plugin.get_storage('channel_number')
         favourite_channels = plugin.get_storage('favourite_channels')
         for channel in channels:
-            name = channels[1]
-            number = channels.group[0]
+            name = channel[1]
+            number = channel[0]
             #log2(channel)
             channel_number[number] = name
-            if plugin.get_setting('ignore_favourites') == 'true':
+            if favourites == 'true':
                 items.append(channel_listing_item(name,number))
             else:
                 if number in favourite_channels:
@@ -298,13 +298,13 @@ def channels():
     else:
         channel_number = plugin.get_storage('channel_number')
         favourite_channels = plugin.get_storage('favourite_channels')
-        if plugin.get_setting('ignore_favourites') == 'true':
-            for number in channel_number:
-                name = channel_number[number]
-                items.append(channel_listing_item(name,number))
-        else:
+        if favourites == 'true':
             for number in favourite_channels:
                 name = favourite_channels[number]
+                items.append(channel_listing_item(name,number))            
+        else:
+            for number in channel_number:
+                name = channel_number[number]
                 items.append(channel_listing_item(name,number))
 
     #plugin.set_view_mode(51)
@@ -314,8 +314,8 @@ def channels():
 
 
     
-@plugin.route('/now_next')
-def now_next():
+@plugin.route('/now_next/<favourites>')
+def now_next(favourites):
     r = requests.get('http://www.tvguide.co.uk/mobile/')
     html = r.text
     
@@ -336,6 +336,9 @@ def now_next():
         match = re.search(r'href="http://www\.tvguide\.co\.uk/mobile/channellisting\.asp\?ch=(.*?)"', channel)
         if match:
             channel_number=match.group(1)
+            if favourites == 'true':
+                if not channel_number in favourite_channels:
+                    continue
 
         start = ''
         program = ''
@@ -374,14 +377,14 @@ def now_next():
         #    item['is_playable'] = True
         #    item['path'] = channel_player[name]
         
-        if plugin.get_setting('ignore_favourites') == 'false':
+        if favourites == 'true':
             if channel_number in favourite_channels:
                 items.append(item)
         else:
             items.append(item)
        
        
-    plugin.set_view_mode(51)
+    #plugin.set_view_mode(51)
     return items
    
 @plugin.route('/all_favourites')
@@ -546,17 +549,27 @@ def index():
 
     items = [  
     {
-        'label': 'Now Next After',
-        'path': plugin.url_for('now_next' ),
+        'label': '[COLOR green][B]Favourites[/B][/COLOR]: [COLOR yellow]All Next After[/COLOR]',
+        'path': plugin.url_for('now_next', favourites='true' ),
 
     } ,  
     {
-        'label': 'Channel Listings',
-        'path': plugin.url_for('channels' ),
+        'label': '[COLOR green][B]Favourites[/B][/COLOR]: [COLOR orange]Channel Listings[/COLOR]',
+        'path': plugin.url_for('channels', favourites='true' ),
+
+    } ,      
+    {
+        'label': '[COLOR red][B]All[/B][/COLOR]: [COLOR yellow]Now Next After[/COLOR]',
+        'path': plugin.url_for('now_next', favourites='false'),
+
+    } ,  
+    {
+        'label': '[COLOR red][B]All[/B][/COLOR]: [COLOR orange]Channel Listings[/COLOR]',
+        'path': plugin.url_for('channels', favourites='false'),
 
     } ,        
     {
-        'label': 'Set Favourites',
+        'label': '[B]Favourites[/B]: Set',
         'path': plugin.url_for('set_favourites' ),
 
     } ,     
