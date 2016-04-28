@@ -38,7 +38,7 @@ def detail(url):
     tables = html.split('<table')
     items = []
     for table in tables:
-        log(table)
+        #log(table)
         thumb = ''
         match = re.search(r'background-image: url\((.*?)\)',table,flags=(re.DOTALL | re.MULTILINE))
         if match:
@@ -140,7 +140,7 @@ def play_channel(name,number):
         }
         items.append(item)
 
-    log(number)
+    #log(number)
     item = {
     'label': '[COLOR yellow][B]%s[/B][/COLOR] [COLOR red][B]Listing[/B][/COLOR]' % (name),
     'path': plugin.url_for('listing', name=name,number=number),
@@ -156,7 +156,7 @@ def local_time(ttime):
     
 
     from_zone = tz.gettz('UTC')
-    log2(from_zone)
+    #log2(from_zone)
     to_zone = tz.gettz()
     match = re.search(r'(.{1,2}):(.{2})(.{2})',ttime)
     if match:
@@ -171,7 +171,7 @@ def local_time(ttime):
             if hour == 12:
                 hour = 0
         
-        log(hour)
+        #log(hour)
         utc = datetime.utcnow()
         #utc = utc.replace(hour=hour,minute=min,tzinfo=from_zone)
         utc = utc.replace(hour=hour,minute=min)
@@ -284,21 +284,25 @@ def channels():
             #log(channel)
             channel_number[channel[0]] = channel[1]
             if plugin.get_setting('ignore_favourites') == 'true':
-                items.append({'label': channel[1], 'path': plugin.url_for('listing', name=channel[1].encode("utf8"),number=channel[0])})
+                thumb = "http://my.tvguide.co.uk/channel_logos/60x35/%s.png" % channel[0]
+                items.append({'label': channel[1], 'thumbnail': thumb, 'path': plugin.url_for('listing', name=channel[1].encode("utf8"),number=channel[0])})
             else:
                 if channel[0] in favourite_channels:
-                    items.append({'label': channel[1], 'path': plugin.url_for('listing', name=channel[1].encode("utf8"),number=channel[0])})
+                    thumb = "http://my.tvguide.co.uk/channel_logos/60x35/%s.png" % channel[0]
+                    items.append({'label': channel[1], 'thumbnail': thumb, 'path': plugin.url_for('listing', name=channel[1].encode("utf8"),number=channel[0])})
     else:
         channel_number = plugin.get_storage('channel_number')
         favourite_channels = plugin.get_storage('favourite_channels')
         if plugin.get_setting('ignore_favourites') == 'true':
             for number in channel_number:
                 name = channel_number[number]
-                items.append({'label': name, 'path': plugin.url_for('listing', name=name.encode("utf8"),number=number)})
+                thumb = "http://my.tvguide.co.uk/channel_logos/60x35/%s.png" % number
+                items.append({'label': name, 'thumbnail': thumb, 'path': plugin.url_for('listing', name=name.encode("utf8"),number=number)})
         else:
             for number in favourite_channels:
                 name = favourite_channels[number]
-                items.append({'label': name, 'path': plugin.url_for('listing', name=name.encode("utf8"),number=number)})
+                thumb = "http://my.tvguide.co.uk/channel_logos/60x35/%s.png" % number
+                items.append({'label': name, 'thumbnail': thumb, 'path': plugin.url_for('listing', name=name.encode("utf8"),number=number)})
 
                 plugin.set_view_mode(51)
                 
@@ -485,7 +489,7 @@ def search_for(name):
         #date = ''
         match = re.search(r'<span class="datetime">(.*?)</span>',table,flags=(re.DOTALL | re.MULTILINE))
         if match:
-            log(match)
+            #log(match)
             #continue
             match = re.search(r'(.*?)</span>.*?<span class="datetime">(.*?)</span><br>.*?<b><span class="season">Season (.*?) </span>.*?<span class="season">Episode (.*?) of (.*?)</span>',table,flags=(re.DOTALL | re.MULTILINE))
             if match:
@@ -495,11 +499,11 @@ def search_for(name):
                 episode = match.group(4)
                 total = match.group(5)
                 
-                log(channel)
-                log(date)
-                log(season)
-                log(episode)
-                log(total)
+                #log(channel)
+                #log(date)
+                #log(season)
+                #log(episode)
+                #log(total)
                 continue
         #continue
         match = re.search(r'<span property="description"',table,flags=(re.DOTALL | re.MULTILINE))
@@ -508,8 +512,8 @@ def search_for(name):
             if match:
                 episode_title =  match.group(1)
                 plot =  match.group(2)
-                log(episode_title)
-                log(plot)
+                #log(episode_title)
+                #log(plot)
                 #continue
                 label = "[COLOR yellow][B]%s[/B][/COLOR] %s [COLOR red][B]%sx%s[/B][/COLOR] [COLOR orange][B]%s[/B][/COLOR] %s" % (channel,date,season,episode,episode_title,plot)
                 item = {'label':label}
