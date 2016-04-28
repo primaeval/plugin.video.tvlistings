@@ -70,9 +70,10 @@ def get_tvdb_id(name):
   
 @plugin.route('/play/<channel>/<title>/<season>/<episode>')
 def play(channel,title,season,episode):
-    log2(channel)
+    #log2(channel)
     channel_number = plugin.get_storage('channel_number')
-    items = play_channel(channel_number[channel])
+    channel_items = play_channel(channel_number[channel],channel)
+    items = []
     tvdb_id = ''
     if int(season) > 0 and int(episode) > 0:
         tvdb_id = get_tvdb_id(title)
@@ -115,11 +116,12 @@ def play(channel,title,season,episode):
             'path': meta_url,
             'is_playable': False,
              }) 
-    log(items)     
+    #log(items)  
+    items.extend(channel_items)
     return items
 
-@plugin.route('/play_channel/<name>')
-def play_channel(name):
+@plugin.route('/play_channel/<name>/<number>')
+def play_channel(name,number):
     if plugin.get_setting('ini_reload') == 'true':
         store_channels()
         plugin.set_setting('ini_reload','false')
@@ -137,16 +139,25 @@ def play_channel(name):
         'is_playable': True,
         }
         items.append(item)
+
+    log(number)
+    item = {
+    'label': '[COLOR yellow][B]%s[/B][/COLOR] [COLOR red][B]Listing[/B][/COLOR]' % (name),
+    'path': plugin.url_for('listing', name=name,number=number),
+    'is_playable': False,
+    }
+    items.append(item)
         
     return items
   
-@plugin.route('/listing/<channel>')
-def listing(channel):
+@plugin.route('/listing/<name>/<number>')
+def listing(name,number):
     #r = requests.get('http://my.tvguide.co.uk/channellisting.asp?ch=%s&cTime=4/27/2016%%208:00:00%%20AM&thisTime=&thisDay=' % channel)
-    r = requests.get('http://my.tvguide.co.uk/channellisting.asp?ch=%s' % channel)
+    r = requests.get('http://my.tvguide.co.uk/channellisting.asp?ch=%s' % number)
     html = r.text
     #log2(html)
     #return
+    
     
     tables = html.split('<table')
     items = []
@@ -182,10 +193,13 @@ def listing(channel):
             title = match.group(2)
             plot = match.group(3)
             
-        path = plugin.url_for('play', channel=channel,title=title.encode("utf8"),season=season,episode=episode)
+        path = plugin.url_for('play', channel=number,title=title.encode("utf8"),season=season,episode=episode)
         
         if title:
-            label = "%s [COLOR orange][B]%s[/B][/COLOR] %s" % (time,title,plot)
+            if  plugin.get_setting('channel_name') == 'true':
+                label = "[COLOR yellow][B]%s[/B][/COLOR] %s [COLOR orange][B]%s[/B][/COLOR] %s" % (name,time,title,plot)
+            else:
+                label = "%s [COLOR orange][B]%s[/B][/COLOR] %s" % (time,title,plot)
             item = {'label': label,  'thumbnail': thumb, 'info': {'plot':plot, 'season':season, 'episode':episode, 'genre':genre}}
             if path:
                 item['path'] = path
@@ -215,7 +229,7 @@ def channels():
     for channel in channels:
         #log(channel)
         channel_number[channel[0]] = channel[1]
-        items.append({'label': channel[1], 'path': plugin.url_for('listing', channel=channel[0]),})
+        items.append({'label': channel[1], 'path': plugin.url_for('listing', name=channel[1].encode("utf8"),number=channel[0])})
         
     plugin.set_view_mode(51)
     return items
@@ -223,9 +237,6 @@ def channels():
     
 @plugin.route('/now_next')
 def now_next():
-    #channel_player = plugin.get_storage('channels')
-    
-    
     r = requests.get('http://www.tvguide.co.uk/mobile/')
     html = r.text
     
@@ -240,6 +251,12 @@ def now_next():
         if img_match:
             img_url = img_match.group(1)
             name = img_match.group(2)
+            
+        channel_number = '0'
+        #log2(channel)
+        match = re.search(r'href="http://www\.tvguide\.co\.uk/mobile/channellisting\.asp\?ch=(.*?)"', channel)
+        if match:
+            channel_number=match.group(1)
 
         start = ''
         program = ''
@@ -272,7 +289,7 @@ def now_next():
             label = "%s [COLOR orange][B]%s[/B][/COLOR] %s [COLOR white][B]%s[/B][/COLOR] %s [COLOR grey][B]%s[/B][/COLOR]" % (start,program,next_start,next_program,after_start,after_program)
             
         item = {'label':label,'icon':img_url,'thumbnail':img_url}
-        item['path'] = plugin.url_for('play_channel', name=name)
+        item['path'] = plugin.url_for('play_channel', name=name, number=channel_number)
         #item['is_playable'] = False
         #if name in channel_player:
         #    item['is_playable'] = True
@@ -291,11 +308,11 @@ def store_channels():
     ini_files = [plugin.get_setting('ini_file1'),plugin.get_setting('ini_file2')]
     
     for ini in ini_files:
-        log(ini)
+        #log(ini)
         try:
             f = xbmcvfs.File(ini)
             items = f.read().splitlines()
-            log2(items)
+            #log2(items)
             f.close()
             addon = 'nothing'
             for item in items:
