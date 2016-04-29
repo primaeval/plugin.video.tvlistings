@@ -126,9 +126,7 @@ def local_time(ttime,year,month,day):
         london = timezone('Europe/London')
         utc = timezone('UTC')
         utc_dt = datetime.datetime(int(year),int(month),int(day),hour,minute,0,tzinfo=utc)
-        log2(utc_dt)
         loc_dt = utc_dt.astimezone(london)
-        log2(loc_dt)
         ttime = "%02d:%02d" % (loc_dt.hour,loc_dt.minute)
 
     return ttime
@@ -313,6 +311,8 @@ def now_next(favourites):
             if favourites == 'true':
                 if not channel_number in favourite_channels:
                     continue
+        else:
+            continue
 
         start = ''
         program = ''
