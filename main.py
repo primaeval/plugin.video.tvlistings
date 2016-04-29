@@ -19,6 +19,11 @@ import re
 import urllib,urlparse
 import HTMLParser
 from trakt import Trakt
+#sys.path.append (xbmc.translatePath( os.path.join( os.getcwd(), 'resources', 'lib' ) ))
+import resources.lib.pytz
+from resources.lib.pytz import timezone
+import datetime
+
 
 plugin = Plugin()
 
@@ -120,36 +125,26 @@ def play_channel(name,number):
         
     return items
     
-def local_time(ttime):
-    from datetime import datetime, timedelta
-    from dateutil import tz
-
-    from_zone = tz.gettz('UTC')
-    to_zone = tz.gettz()
+def local_time(ttime,year,month,day):
     match = re.search(r'(.{1,2}):(.{2})(.{2})',ttime)
     if match:
         hour = int(match.group(1))
-        min = int(match.group(2))
+        minute = int(match.group(2))
         ampm = match.group(3)
-        if ampm == "pm":
+        if ampm == 'pm':
             if hour < 12:
                 hour = hour + 12
-                hour = hour % 24
         else:
-            if hour == 12:
+            if hour == 24:
                 hour = 0
-
-        utc = datetime.utcnow()
-        utc = utc.replace(hour=hour,minute=min)
-
-        is_dst = time.daylight and time.localtime().tm_isdst > 0
-        #TODO fix this by winter time
-        utc_offset = - (time.altzone if is_dst else time.timezone) - 3600
-        td_local = timedelta(seconds=utc_offset)
-
-        local = utc + td_local
-
-        ttime = "%02d:%02d" % (local.hour,local.minute)
+        
+        london = timezone('Europe/London')
+        utc = timezone('UTC')
+        utc_dt = datetime.datetime(int(year),int(month),int(day),hour,minute,0,tzinfo=utc)
+        log2(utc_dt)
+        loc_dt = utc_dt.astimezone(london)
+        log2(loc_dt)
+        ttime = "%02d:%02d" % (loc_dt.hour,loc_dt.minute)
 
     return ttime
                 
@@ -160,10 +155,16 @@ def listing(name,number,url):
 
     items = []
     
-    match = re.search(r'<a href=\'(.*?)\'>previous</a>.*?<a href=\'(.*?)\'.*?>next</a>',html,flags=(re.DOTALL | re.MULTILINE))
+    match = re.search(r'<span class=programmeheading>(.*?), (.*?) (.*?), (.*?)</span>.*?<a href=\'(.*?)\'>previous</a>.*?<a href=\'(.*?)\'.*?>next</a>',html,flags=(re.DOTALL | re.MULTILINE))
+    day =''
+    month=''
+    year=''
     if match:
-        next = 'http://my.tvguide.co.uk%s' % match.group(2)
-        previous = 'http://my.tvguide.co.uk%s' % match.group(1)
+        year = match.group(4)
+        month = match.group(2)
+        day = match.group(3)
+        next = 'http://my.tvguide.co.uk%s' % match.group(6)
+        previous = 'http://my.tvguide.co.uk%s' % match.group(5)
         next_day = ''
         match = re.search(r'cTime=(.*?) ',next)
         if match:
@@ -209,7 +210,8 @@ def listing(name,number,url):
             ttime = match.group(1)
             title = match.group(2)
             plot = match.group(3)
-            ttime = local_time(ttime)
+            mon = {'January':0,'February':1,'March':2,'April':4,'May':5,'June':6,'July':7,'August':8,'September':9,'October':10,'November':11,'December':12}
+            ttime = local_time(ttime,year,mon[month],day)
             
         path = plugin.url_for('play', channel=number,title=title.encode("utf8"),season=season,episode=episode)
         
@@ -335,11 +337,15 @@ def now_next(favourites):
         after_program = ''
         match = re.search(r'<div class="div-time">(.*?)</div>.*?<div class="div-title".*?">(.*?)</div>.*?<div class="div-time">(.*?)</div>.*?<div class="div-title".*?">(.*?)</div>.*?<div class="div-time">(.*?)</div>.*?<div class="div-title".*?">(.*?)</div>', channel,flags=(re.DOTALL | re.MULTILINE))
         if match:
-            start = local_time(match.group(1))
+            now = datetime.datetime.now()
+            year = now.year
+            month = now.month
+            day = now.day
+            start = local_time(match.group(1),year,month,day)
             program = match.group(2)
-            next_start = local_time(match.group(3))
+            next_start = local_time(match.group(3),year,month,day)
             next_program = match.group(4)
-            after_start = local_time(match.group(5))
+            after_start = local_time(match.group(5),year,month,day)
             after_program = match.group(6)            
             match = re.search('<img.*?>&nbsp;(.*)',program)
             if match:
