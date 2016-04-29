@@ -172,8 +172,8 @@ def listing(name,number,url):
         match = re.search(r'cTime=(.*?) ',previous)
         if match:
             previous_day = match.group(1)
-        next_label = '>> [B]Next[/B] (%s) >>' % previous_day
-        previous_label = '<< [B]Previous[/B] (%s) <<' % next_day
+        next_label = '>> [B]Next[/B] (%s) >>' % next_day
+        previous_label = '<< [B]Previous[/B] (%s) <<' % previous_day
         items.append({'label': previous_label, 'path' : plugin.url_for('listing', name=name.encode("utf8"),number=number,url=previous)})
         items.append({'label': next_label, 'path' : plugin.url_for('listing', name=name.encode("utf8"),number=number,url=next)})
 
