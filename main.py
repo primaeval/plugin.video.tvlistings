@@ -248,7 +248,8 @@ def listing(name,number,url):
 def channel_listing_item(name,number):
     thumb = "http://my.tvguide.co.uk/channel_logos/60x35/%s.png" % number
     url = 'http://my.tvguide.co.uk/channellisting.asp?ch=%s' % number
-    item = {'label': name, 'thumbnail': thumb, 'path': plugin.url_for('listing', name=name.encode("utf8"),number=number, url=url)}
+    label = '[COLOR yellow][B]%s[/B][/COLOR]' % name
+    item = {'label': label, 'thumbnail': thumb, 'path': plugin.url_for('listing', name=name.encode("utf8"),number=number, url=url)}
     return item
     
 def load_channels():
@@ -426,7 +427,7 @@ def set_favourites():
         item['path'] = path 
         item['thumbnail'] = "http://my.tvguide.co.uk/channel_logos/60x35/%s.png" % number
         items.append(item)
-        
+    plugin.set_view_mode(51)    
     sorted_items = sorted(items, key=lambda item: re.sub('\[.*?\]','',item['label']))
     top_items.extend(sorted_items)
     return top_items
