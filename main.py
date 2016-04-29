@@ -27,36 +27,6 @@ def log2(v):
 
 def log(v):
     xbmc.log(re.sub(',',',\n',repr(v)))
-
-@plugin.route('/detail/<url>')
-def detail(url):
-    r = requests.get('http://my.tvguide.co.uk/channellisting.asp?ch=%s&cTime=4/27/2016%%208:00:00%%20AM&thisTime=&thisDay=' % channel)
-    html = r.text
-    #log2(html)
-    #return
-    
-    tables = html.split('<table')
-    items = []
-    for table in tables:
-        #log(table)
-        thumb = ''
-        match = re.search(r'background-image: url\((.*?)\)',table,flags=(re.DOTALL | re.MULTILINE))
-        if match:
-            thumb = match.group(1)
-        match = re.search(r'<a href="(http://www.tvguide.co.uk/detail/.*?)"',table,flags=(re.DOTALL | re.MULTILINE))
-        path = ''
-        if match:
-            path = plugin.url_for('detail', url=match.group(1))
-        
-        match = re.search(r'<span class="season">(.*?) </span>.*?<span class="programmeheading" >(.*?)</span>.*?<span class="programmetext">(.*?)</span>',table,flags=(re.DOTALL | re.MULTILINE))
-        if match:
-            label = "%s [COLOR orange][B]%s[/B][/COLOR] %s" % (match.group(1),match.group(2),match.group(3))
-            items.append({'label': label, 'path': path, 'thumbnail': thumb, 'info': {'plot':match.group(3)}})
-   
-
-    plugin.set_content('episodes')    
-    plugin.set_view_mode(51)
-    return items
     
 def get_tvdb_id(name):
     tvdb_url = "http://thetvdb.com//api/GetSeries.php?seriesname=%s" % name
