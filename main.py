@@ -372,10 +372,6 @@ def now_next(favourites):
             
         item = {'label':label,'icon':img_url,'thumbnail':img_url}
         item['path'] = plugin.url_for('play_channel', name=name, number=channel_number)
-        #item['is_playable'] = False
-        #if name in channel_player:
-        #    item['is_playable'] = True
-        #    item['path'] = channel_player[name]
         
         if favourites == 'true':
             if channel_number in favourite_channels:
@@ -398,8 +394,7 @@ def all_favourites():
 def no_favourites():
     favourite_channels = plugin.get_storage('favourite_channels')
     favourite_channels.clear()
-    #or channel in favourite_channels:
-    #   favourite_channels.pop(channel)
+
     
 @plugin.route('/add_favourite/<name>/<number>')
 def add_favourite(name,number):
@@ -442,24 +437,17 @@ def set_favourites():
     
 @plugin.route('/store_channels')
 def store_channels():
-    #channels = plugin.get_storage('channels')
-    #channels['BBC1 London'] = 'plugin://plugin.video.iplayerwww/?url=bbc_one_hd&mode=203&name=BBC+One&iconimage=special%3A%2F%2Fhome%2Faddons%2Fplugin.video.iplayerwww%2Fmedia%2Fbbc_one.png&description=&subtitles_url=&logged_in=False'
-    
     ini_files = [plugin.get_setting('ini_file1'),plugin.get_setting('ini_file2')]
     
     for ini in ini_files:
-        #log(ini)
         try:
             f = xbmcvfs.File(ini)
             items = f.read().splitlines()
-            #log2(items)
             f.close()
             addon = 'nothing'
             for item in items:
-                #log2(item)
                 if item.startswith('['):
                     addon = item.strip('[] \t')
-                    #log(addon)
                 elif item.startswith('#'):
                     pass
                 else:
@@ -471,7 +459,6 @@ def store_channels():
                         channels[name] = url
                         addons = plugin.get_storage('addons')
                         addons[addon] = addon
-
         except:
             pass
 
@@ -574,8 +561,7 @@ def index():
 
     } ,     
     ]
-    sorted_items = sorted(items, key=lambda item: item['label'])
-    return sorted_items
+    return items
     
 if __name__ == '__main__':
     plugin.run()
