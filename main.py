@@ -158,21 +158,33 @@ def local_time(ttime):
 
     return ttime
                 
-@plugin.route('/listing/<name>/<number>')
-def listing(name,number):
-
-
-    #r = requests.get('http://my.tvguide.co.uk/channellisting.asp?ch=%s&cTime=4/27/2016%%208:00:00%%20AM&thisTime=&thisDay=' % channel)
-    r = requests.get('http://my.tvguide.co.uk/channellisting.asp?ch=%s' % number)
+@plugin.route('/listing/<name>/<number>/<url>')
+def listing(name,number,url):
+    r = requests.get(url)
     html = r.text
-    #log2(html)
-    #return
-    
-    
-    tables = html.split('<table')
+
     items = []
+    
+    match = re.search(r'<a href=\'(.*?)\'>previous</a>.*?<a href=\'(.*?)\'.*?>next</a>',html,flags=(re.DOTALL | re.MULTILINE))
+    if match:
+        next = 'http://my.tvguide.co.uk%s' % match.group(1)
+        previous = 'http://my.tvguide.co.uk%s' % match.group(2)
+        next_day = ''
+        match = re.search(r'cTime=(.*?) ',next)
+        if match:
+            next_day = match.group(1)
+        previous_day = ''
+        match = re.search(r'cTime=(.*?) ',previous)
+        if match:
+            previous_day = match.group(1)
+        next_label = '>> [B]Next[/B] (%s) >>' % previous_day
+        previous_label = '<< [B]Previous[/B] (%s) <<' % next_day
+        items.append({'label': previous_label, 'path' : plugin.url_for('listing', name=name.encode("utf8"),number=number,url=previous)})
+        items.append({'label': next_label, 'path' : plugin.url_for('listing', name=name.encode("utf8"),number=number,url=next)})
+
+    tables = html.split('<table')
+
     for table in tables:
-        #log(table)
         thumb = ''
         match = re.search(r'background-image: url\((.*?)\)',table,flags=(re.DOTALL | re.MULTILINE))
         if match:
@@ -234,7 +246,8 @@ def listing(name,number):
     
 def channel_listing_item(name,number):
     thumb = "http://my.tvguide.co.uk/channel_logos/60x35/%s.png" % number
-    item = {'label': name, 'thumbnail': thumb, 'path': plugin.url_for('listing', name=name.encode("utf8"),number=number)}
+    url = 'http://my.tvguide.co.uk/channellisting.asp?ch=%s' % number
+    item = {'label': name, 'thumbnail': thumb, 'path': plugin.url_for('listing', name=name.encode("utf8"),number=number, url=url)}
     return item
     
 @plugin.route('/channels/<favourites>')
