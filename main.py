@@ -112,7 +112,6 @@ def play_channel(name,number):
 
     url = 'http://my.tvguide.co.uk/channellisting.asp?ch=%s' % number
         
-    #log(number)
     item = {
     'label': '[COLOR yellow][B]%s[/B][/COLOR] [COLOR red][B]Listing[/B][/COLOR]' % (name),
     'path': plugin.url_for('listing', name=name,number=number,url=url),
@@ -252,50 +251,43 @@ def channel_listing_item(name,number):
     item = {'label': name, 'thumbnail': thumb, 'path': plugin.url_for('listing', name=name.encode("utf8"),number=number, url=url)}
     return item
     
-@plugin.route('/channels/<favourites>')
-def channels(favourites):
-    items = []
+def load_channels():
     if plugin.get_setting('channels_reload') == 'true':
         plugin.set_setting('channels_reload','false')
         r = requests.get('http://www.tvguide.co.uk/')
         html = r.text
-        #log2(html)
     
         match = re.search(r'<select name="channelid">(.*?)</select>',html,flags=(re.DOTALL | re.MULTILINE))
-        #log(match)
         if not match:
             return
         
         f = xbmcvfs.File('special://userdata/addon_data/plugin.video.tvlistings/template.ini','w')
-        f.write("# WARNING Make a copy of this file.\n# It will be overwritten on next channel reload.\n[plugin.video.template]\n")
+        f.write("# WARNING Make a copy of this file.\n# It will be overwritten on the next channel reload.\n[plugin.video.template]\n")
         
         channels = re.findall(r'<option value=(.*?)>(.*?)</option>',match.group(1),flags=(re.DOTALL | re.MULTILINE))
 
         channel_number = plugin.get_storage('channel_number')
-        favourite_channels = plugin.get_storage('favourite_channels')
         for channel in channels:
             name = channel[1]
             number = channel[0]
             channel_number[number] = name
-            if favourites == 'true':
-                if number in favourite_channels:
-                    items.append(channel_listing_item(name,number))                
-            else:
-                items.append(channel_listing_item(name,number))
             line = "%s=\n" % name
             f.write(line.encode("utf8"))
         f.close()
+    
+@plugin.route('/channels/<favourites>')
+def channels(favourites):
+    items = []
+    channel_number = plugin.get_storage('channel_number')
+    favourite_channels = plugin.get_storage('favourite_channels')
+    if favourites == 'true':
+        for number in favourite_channels:
+            name = favourite_channels[number]
+            items.append(channel_listing_item(name,number))            
     else:
-        channel_number = plugin.get_storage('channel_number')
-        favourite_channels = plugin.get_storage('favourite_channels')
-        if favourites == 'true':
-            for number in favourite_channels:
-                name = favourite_channels[number]
-                items.append(channel_listing_item(name,number))            
-        else:
-            for number in channel_number:
-                name = channel_number[number]
-                items.append(channel_listing_item(name,number))
+        for number in channel_number:
+            name = channel_number[number]
+            items.append(channel_listing_item(name,number))
 
     plugin.set_view_mode(51)
     sorted_items = sorted(items, key=lambda item: item['label'])
@@ -522,7 +514,7 @@ def search():
     
 @plugin.route('/')
 def index():
-
+    load_channels()
     items = [  
     {
         'label': '[COLOR green][B]Favourites[/B][/COLOR]: [COLOR yellow]All Next After[/COLOR] popular',
