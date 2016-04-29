@@ -262,7 +262,7 @@ def load_channels():
             return
         
         f = xbmcvfs.File('special://userdata/addon_data/plugin.video.tvlistings/template.ini','w')
-        f.write("# WARNING Make a copy of this file.\n# It will be overwritten on the next channel reload.\n[plugin.video.template]\n")
+        f.write("# WARNING Make a copy of this file.\n# It will be overwritten on the next channel reload.\n[plugin.video.all]\n")
         
         channels = re.findall(r'<option value=(.*?)>(.*?)</option>',match.group(1),flags=(re.DOTALL | re.MULTILINE))
 
@@ -273,7 +273,22 @@ def load_channels():
             channel_number[number] = name
             line = "%s=\n" % name
             f.write(line.encode("utf8"))
+        
+        f.write("[plugin.video.now_next_after]\n")
+        r = requests.get('http://www.tvguide.co.uk/mobile/')
+        html = r.text
+        channels = html.split('<div class="div-channel-progs">')
+        for channel in channels:
+            match = re.search(r'href="http://www\.tvguide\.co\.uk/mobile/channellisting\.asp\?ch=(.*?)"', channel)
+            if match:
+                number=match.group(1)
+                name= channel_number[number]
+                line = "%s=\n" % name
+                f.write(line.encode("utf8"))
+                
         f.close()
+        
+        
     
 @plugin.route('/channels/<favourites>')
 def channels(favourites):
