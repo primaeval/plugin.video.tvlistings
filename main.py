@@ -40,7 +40,6 @@ def get_tvdb_id(name):
   
 @plugin.route('/play/<channel>/<title>/<season>/<episode>')
 def play(channel,title,season,episode):
-    #log2(channel)
     channel_number = plugin.get_storage('channel_number')
     channel_items = play_channel(channel_number[channel],channel)
     items = []
@@ -86,7 +85,7 @@ def play(channel,title,season,episode):
             'path': meta_url,
             'is_playable': False,
              }) 
-    #log(items)  
+
     items.extend(channel_items)
     return items
 
@@ -124,10 +123,8 @@ def play_channel(name,number):
 def local_time(ttime):
     from datetime import datetime, timedelta
     from dateutil import tz
-    
 
     from_zone = tz.gettz('UTC')
-    #log2(from_zone)
     to_zone = tz.gettz()
     match = re.search(r'(.{1,2}):(.{2})(.{2})',ttime)
     if match:
@@ -141,20 +138,17 @@ def local_time(ttime):
         else:
             if hour == 12:
                 hour = 0
-        
-        #log(hour)
+
         utc = datetime.utcnow()
-        #utc = utc.replace(hour=hour,minute=min,tzinfo=from_zone)
         utc = utc.replace(hour=hour,minute=min)
 
-        # get the local timezone offset in seconds
         is_dst = time.daylight and time.localtime().tm_isdst > 0
+        #TODO fix this by winter time
         utc_offset = - (time.altzone if is_dst else time.timezone) - 3600
         td_local = timedelta(seconds=utc_offset)
 
         local = utc + td_local
-        
-        #local = utc.astimezone(to_zone)
+
         ttime = "%02d:%02d" % (local.hour,local.minute)
 
     return ttime
@@ -215,14 +209,11 @@ def listing(name,number,url):
             ttime = match.group(1)
             title = match.group(2)
             plot = match.group(3)
-            
             ttime = local_time(ttime)
-
             
         path = plugin.url_for('play', channel=number,title=title.encode("utf8"),season=season,episode=episode)
         
         if title:
-            
             if  plugin.get_setting('channel_name') == 'true':
                 if plugin.get_setting('show_plot') == 'true':
                     label = "[COLOR yellow][B]%s[/B][/COLOR] %s [COLOR orange][B]%s[/B][/COLOR] %s" % (name,ttime,title,plot)
@@ -239,7 +230,6 @@ def listing(name,number,url):
             else:
                 item['is_playable'] = False,
             items.append(item)
-   
 
     plugin.set_content('episodes')    
     plugin.set_view_mode(51)
@@ -261,7 +251,8 @@ def load_channels():
         match = re.search(r'<select name="channelid">(.*?)</select>',html,flags=(re.DOTALL | re.MULTILINE))
         if not match:
             return
-        
+        f = xbmcvfs.File('special://userdata/addon_data/plugin.video.tvlistings/myaddons.ini','w')
+        f.close()
         f = xbmcvfs.File('special://userdata/addon_data/plugin.video.tvlistings/template.ini','w')
         f.write("# WARNING Make a copy of this file.\n# It will be overwritten on the next channel reload.\n[plugin.video.all]\n")
         
@@ -329,7 +320,6 @@ def now_next(favourites):
             name = img_match.group(2)
             
         channel_number = '0'
-        #log2(channel)
         match = re.search(r'href="http://www\.tvguide\.co\.uk/mobile/channellisting\.asp\?ch=(.*?)"', channel)
         if match:
             channel_number=match.group(1)
@@ -375,10 +365,10 @@ def now_next(favourites):
                 items.append(item)
         else:
             items.append(item)
-       
-       
+
     plugin.set_view_mode(51)
     return items
+   
    
 @plugin.route('/all_favourites')
 def all_favourites():
@@ -391,7 +381,6 @@ def all_favourites():
 def no_favourites():
     favourite_channels = plugin.get_storage('favourite_channels')
     favourite_channels.clear()
-
     
 @plugin.route('/add_favourite/<name>/<number>')
 def add_favourite(name,number):
@@ -459,81 +448,13 @@ def store_channels():
         except:
             pass
 
-
-@plugin.route('/search/<name>')
-def search_for(name):
-    if not name:
-        return
-    url = 'http://my.tvguide.co.uk/titlesearch.asp?title=%s' % name
-    
-    r = requests.get(url)
-    html = r.text
-    #log2(html)
-    #return
-    
-    tables = html.split('<span class="tvchannel">')
-    items = []
-    for table in tables:
-        log(table)
-        #continue
-        #channel = ''
-        #date = ''
-        match = re.search(r'<span class="datetime">(.*?)</span>',table,flags=(re.DOTALL | re.MULTILINE))
-        if match:
-            #log(match)
-            #continue
-            match = re.search(r'(.*?)</span>.*?<span class="datetime">(.*?)</span><br>.*?<b><span class="season">Season (.*?) </span>.*?<span class="season">Episode (.*?) of (.*?)</span>',table,flags=(re.DOTALL | re.MULTILINE))
-            if match:
-                channel = match.group(1)
-                date = match.group(2)
-                season = match.group(3)
-                episode = match.group(4)
-                total = match.group(5)
-                
-                #log(channel)
-                #log(date)
-                #log(season)
-                #log(episode)
-                #log(total)
-                continue
-        #continue
-        match = re.search(r'<span property="description"',table,flags=(re.DOTALL | re.MULTILINE))
-        if match:
-            match = re.search(r'(.*?)</span>.*?<span property="description" content="(.*?)"></span>',table,flags=(re.DOTALL | re.MULTILINE))
-            if match:
-                episode_title =  match.group(1)
-                plot =  match.group(2)
-                #log(episode_title)
-                #log(plot)
-                #continue
-                label = "[COLOR yellow][B]%s[/B][/COLOR] %s [COLOR red][B]%sx%s[/B][/COLOR] [COLOR orange][B]%s[/B][/COLOR] %s" % (channel,date,season,episode,episode_title,plot)
-                item = {'label':label}
-                items.append(item)
-
-            
-        #continue
-
-   
-
-    return items
-    #plugin.set_content('episodes')    
-    #plugin.set_view_mode(51)
-    return items
-    
-    
-@plugin.route('/search')
-def search():
-    dialog = xbmcgui.Dialog()
-    name = dialog.input('Search for programme', type=xbmcgui.INPUT_ALPHANUM)
-    if name:
-        return search_for(name)
     
 @plugin.route('/')
 def index():
     load_channels()
     items = [  
     {
-        'label': '[COLOR green][B]Favourites[/B][/COLOR]: [COLOR yellow]All Next After[/COLOR] popular',
+        'label': '[COLOR green][B]Favourites[/B][/COLOR]: [COLOR yellow]Now Next After[/COLOR] popular',
         'path': plugin.url_for('now_next', favourites='true' ),
 
     } ,  
@@ -562,3 +483,5 @@ def index():
     
 if __name__ == '__main__':
     plugin.run()
+    plugin.set_view_mode(51)
+    
