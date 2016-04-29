@@ -162,8 +162,8 @@ def listing(name,number,url):
     
     match = re.search(r'<a href=\'(.*?)\'>previous</a>.*?<a href=\'(.*?)\'.*?>next</a>',html,flags=(re.DOTALL | re.MULTILINE))
     if match:
-        next = 'http://my.tvguide.co.uk%s' % match.group(1)
-        previous = 'http://my.tvguide.co.uk%s' % match.group(2)
+        next = 'http://my.tvguide.co.uk%s' % match.group(2)
+        previous = 'http://my.tvguide.co.uk%s' % match.group(1)
         next_day = ''
         match = re.search(r'cTime=(.*?) ',next)
         if match:
