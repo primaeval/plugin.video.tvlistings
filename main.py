@@ -266,6 +266,9 @@ def channels(favourites):
         if not match:
             return
         
+        f = xbmcvfs.File('special://userdata/addon_data/plugin.video.tvlistings/template.ini','w')
+        f.write("# WARNING Make a copy of this file.\n# It will be overwritten on next channel reload.\n[plugin.video.template]\n")
+        
         channels = re.findall(r'<option value=(.*?)>(.*?)</option>',match.group(1),flags=(re.DOTALL | re.MULTILINE))
 
         channel_number = plugin.get_storage('channel_number')
@@ -273,13 +276,15 @@ def channels(favourites):
         for channel in channels:
             name = channel[1]
             number = channel[0]
-            #log2(channel)
             channel_number[number] = name
             if favourites == 'true':
-                items.append(channel_listing_item(name,number))
-            else:
                 if number in favourite_channels:
-                    items.append(channel_listing_item(name,number))
+                    items.append(channel_listing_item(name,number))                
+            else:
+                items.append(channel_listing_item(name,number))
+            line = "%s=\n" % name
+            f.write(line.encode("utf8"))
+        f.close()
     else:
         channel_number = plugin.get_storage('channel_number')
         favourite_channels = plugin.get_storage('favourite_channels')
@@ -293,7 +298,6 @@ def channels(favourites):
                 items.append(channel_listing_item(name,number))
 
     plugin.set_view_mode(51)
-    #log2(items)            
     sorted_items = sorted(items, key=lambda item: item['label'])
     return sorted_items                
 
