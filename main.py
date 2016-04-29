@@ -131,11 +131,12 @@ def local_time(ttime,year,month,day):
         hour = int(match.group(1))
         minute = int(match.group(2))
         ampm = match.group(3)
-        if ampm == 'pm':
+        if ampm == "pm":
             if hour < 12:
                 hour = hour + 12
+                hour = hour % 24
         else:
-            if hour == 24:
+            if hour == 12:
                 hour = 0
         
         london = timezone('Europe/London')
