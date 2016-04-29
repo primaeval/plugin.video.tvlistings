@@ -1,25 +1,9 @@
-from xbmcswift2 import Plugin,ListItem
+from xbmcswift2 import Plugin
 import xbmc,xbmcaddon,xbmcvfs,xbmcgui
-import os, sys, subprocess
-from subprocess import Popen
-import json
 import re
-import time
-import xml.etree.ElementTree as etree
-from urlparse import parse_qsl
-import xbmcgui
-import xbmcplugin
-import xbmcgui
-import xbmcaddon
-import sys
-import os
 
 import requests
-import re
-import urllib,urlparse
-import HTMLParser
-from trakt import Trakt
-#sys.path.append (xbmc.translatePath( os.path.join( os.getcwd(), 'resources', 'lib' ) ))
+
 import resources.lib.pytz
 from resources.lib.pytz import timezone
 import datetime
@@ -490,5 +474,4 @@ def index():
     
 if __name__ == '__main__':
     plugin.run()
-    plugin.set_view_mode(51)
     
