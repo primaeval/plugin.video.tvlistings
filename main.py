@@ -110,10 +110,12 @@ def play_channel(name,number):
         }
         items.append(item)
 
+    url = 'http://my.tvguide.co.uk/channellisting.asp?ch=%s' % number
+        
     #log(number)
     item = {
     'label': '[COLOR yellow][B]%s[/B][/COLOR] [COLOR red][B]Listing[/B][/COLOR]' % (name),
-    'path': plugin.url_for('listing', name=name,number=number),
+    'path': plugin.url_for('listing', name=name,number=number,url=url),
     'is_playable': False,
     }
     items.append(item)
