@@ -268,8 +268,9 @@ def load_channels():
         match = re.search(r'<select name="channelid">(.*?)</select>',html,flags=(re.DOTALL | re.MULTILINE))
         if not match:
             return
-        f = xbmcvfs.File('special://userdata/addon_data/plugin.video.tvlistings/myaddons.ini','w')
-        f.close()
+        if not xbmcvfs.exists('special://userdata/addon_data/plugin.video.tvlistings/myaddons.ini'):
+            f = xbmcvfs.File('special://userdata/addon_data/plugin.video.tvlistings/myaddons.ini','w')
+            f.close()
         f = xbmcvfs.File('special://userdata/addon_data/plugin.video.tvlistings/template.ini','w')
         f.write("# WARNING Make a copy of this file.\n# It will be overwritten on the next channel reload.\n[plugin.video.all]\n")
         
@@ -446,6 +447,13 @@ def set_favourites():
     
 @plugin.route('/store_channels')
 def store_channels():
+    addons = plugin.get_storage('addons')
+    items = []
+    for addon in addons:
+        channels = plugin.get_storage(addon)
+        channels.clear()
+    addons.clear()
+
     ini_files = [plugin.get_setting('ini_file1'),plugin.get_setting('ini_file2')]
     
     for ini in ini_files:
@@ -464,10 +472,11 @@ def store_channels():
                     if len(name_url) == 2:
                         name = name_url[0]
                         url = name_url[1]
-                        channels = plugin.get_storage(addon)
-                        channels[name] = url
-                        addons = plugin.get_storage('addons')
-                        addons[addon] = addon
+                        if url:
+                            channels = plugin.get_storage(addon)
+                            channels[name] = url
+                            addons = plugin.get_storage('addons')
+                            addons[addon] = addon
         except:
             pass
 
