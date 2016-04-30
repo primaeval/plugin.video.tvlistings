@@ -39,20 +39,20 @@ def play(channel,title,season,episode):
         if season and episode:
             meta_url = "plugin://plugin.video.meta/tv/play/%s/%s/%s/%s" % (tvdb_id,season,episode,'select')
             items.append({
-            'label': '[COLOR orange][B]%s[/B][/COLOR] [COLOR red][B]S%sE%s[/B][/COLOR] [COLOR grey](tvdb:%s)[/COLOR]' % (title,season,episode,tvdb_id),
+            'label': '[COLOR orange][B]%s[/B][/COLOR] [COLOR red][B]S%sE%s[/B][/COLOR] [COLOR green][B]Meta episode[/B][/COLOR]' % (title,season,episode),
             'path': meta_url,
             'is_playable': True,
              })
         if season:
             meta_url = "plugin://plugin.video.meta/tv/tvdb/%s/%s" % (tvdb_id,season)
             items.append({
-            'label': '[COLOR orange][B]%s[/B][/COLOR] [COLOR red][B]S%s[/B][/COLOR] [COLOR grey](tvdb:%s)[/COLOR]' % (title,season,tvdb_id),
+            'label': '[COLOR orange][B]%s[/B][/COLOR] [COLOR red][B]S%s[/B][/COLOR] [COLOR green][B]Meta season[/B][/COLOR]' % (title,season),
             'path': meta_url,
             'is_playable': False,
              })         
         meta_url = "plugin://plugin.video.meta/tv/tvdb/%s" % (tvdb_id)
         items.append({
-        'label': '[COLOR orange][B]%s[/B][/COLOR] [COLOR grey](tvdb:%s)[/COLOR]' % (title,tvdb_id),
+        'label': '[COLOR orange][B]%s[/B][/COLOR] [COLOR green][B]Meta[/B][/COLOR]' % (title),
         'path': meta_url,
         'is_playable': False,
          })
@@ -68,7 +68,7 @@ def play(channel,title,season,episode):
             year =  match.group(2) #TODO: Meta doesn't support year yet
             meta_url = "plugin://plugin.video.meta/movies/search_term/%s/1" % (movie)
             items.append({
-            'label': '[COLOR orange][B]%s[/B][/COLOR] [COLOR grey](movie)[/COLOR]' % (title),
+            'label': '[COLOR orange][B]%s[/B][/COLOR] [COLOR green][B]Meta[/B][/COLOR]' % (title),
             'path': meta_url,
             'is_playable': False,
              }) 
@@ -80,7 +80,7 @@ def play(channel,title,season,episode):
         else:
             meta_url = "plugin://plugin.video.meta/tv/search_term/%s/1" % (title)
             items.append({
-            'label': '[COLOR orange][B]%s[/B][/COLOR] [COLOR grey](tvdb:?)[/COLOR]' % (title),
+            'label': '[COLOR orange][B]%s[/B][/COLOR] [COLOR green][B]Meta search[/B][/COLOR]' % (title),
             'path': meta_url,
             'is_playable': False,
              }) 
@@ -106,12 +106,17 @@ def play_channel(name,number):
         if not name in channels:
             continue
         path = channels[name]
-        item = {
-        'label': '[COLOR yellow][B]%s[/B][/COLOR] [COLOR grey][%s][/COLOR]' % (name,addon),
-        'path': path,
-        'is_playable': True,
-        }
-        items.append(item)
+        try:
+            addon = xbmcaddon.Addon(addon)
+            if addon:
+                item = {
+                'label': '[COLOR yellow][B]%s[/B][/COLOR] [COLOR green][B]%s[/B][/COLOR]' % (name,addon.getAddonInfo('name')),
+                'path': path,
+                'is_playable': True,
+                }
+                items.append(item)
+        except:
+            pass
 
     url = 'http://my.tvguide.co.uk/channellisting.asp?ch=%s' % number
         
