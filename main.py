@@ -56,6 +56,11 @@ def play(channel,title,season,episode):
         'path': meta_url,
         'is_playable': False,
          })
+        if xbmcaddon.Addon('plugin.video.sickrage'):
+            items.append({
+            'label':'[COLOR orange][B]%s[/B][/COLOR] [COLOR green][B]SickRage[/B][/COLOR]' % (title), 
+            'path':"plugin://plugin.video.sickrage?action=addshow&&show_name=%s" % (title),
+            }) 
     else:
         match = re.search(r'(.*?)\(([0-9]*)\)$',title)
         if match:
@@ -66,7 +71,12 @@ def play(channel,title,season,episode):
             'label': '[COLOR orange][B]%s[/B][/COLOR] [COLOR grey](movie)[/COLOR]' % (title),
             'path': meta_url,
             'is_playable': False,
-             })              
+             }) 
+            if xbmcaddon.Addon('plugin.video.couchpotato_manager'):
+                items.append({
+                'label':'[COLOR orange][B]%s[/B][/COLOR] [COLOR green][B]CouchPotato[/B][/COLOR]' % (title), 
+                'path':"plugin://plugin.video.couchpotato_manager/movies/add/?title=%s" % (title)
+                })
         else:
             meta_url = "plugin://plugin.video.meta/tv/search_term/%s/1" % (title)
             items.append({
@@ -74,7 +84,12 @@ def play(channel,title,season,episode):
             'path': meta_url,
             'is_playable': False,
              }) 
-
+            if xbmcaddon.Addon('plugin.video.sickrage'):
+                items.append({
+                'label':'[COLOR orange][B]%s[/B][/COLOR] [COLOR green][B]SickRage[/B][/COLOR]' % (title), 
+                'path':"plugin://plugin.video.sickrage?action=addshow&&show_name=%s" % (title),
+                })  
+   
     items.extend(channel_items)
     return items
 
@@ -213,7 +228,7 @@ def listing(name,number,url):
             if path:
                 item['path'] = path
             else:
-                item['is_playable'] = False,
+                item['is_playable'] = False
             items.append(item)
 
     plugin.set_content('episodes')    
