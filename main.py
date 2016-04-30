@@ -56,11 +56,15 @@ def play(channel,title,season,episode):
         'path': meta_url,
         'is_playable': False,
          })
-        if xbmcaddon.Addon('plugin.video.sickrage'):
-            items.append({
-            'label':'[COLOR orange][B]%s[/B][/COLOR] [COLOR green][B]SickRage[/B][/COLOR]' % (title), 
-            'path':"plugin://plugin.video.sickrage?action=addshow&&show_name=%s" % (title),
-            }) 
+        try:
+            addon = xbmcaddon.Addon('plugin.video.sickrage')
+            if addon:
+                items.append({
+                'label':'[COLOR orange][B]%s[/B][/COLOR] [COLOR green][B]SickRage[/B][/COLOR]' % (title), 
+                'path':"plugin://plugin.video.sickrage?action=addshow&&show_name=%s" % (title),
+                })
+        except:
+            pass
     else:
         match = re.search(r'(.*?)\(([0-9]*)\)$',title)
         if match:
@@ -72,11 +76,15 @@ def play(channel,title,season,episode):
             'path': meta_url,
             'is_playable': False,
              }) 
-            if xbmcaddon.Addon('plugin.video.couchpotato_manager'):
-                items.append({
-                'label':'[COLOR orange][B]%s[/B][/COLOR] [COLOR green][B]CouchPotato[/B][/COLOR]' % (title), 
-                'path':"plugin://plugin.video.couchpotato_manager/movies/add/?title=%s" % (title)
-                })
+            try:
+                addon = xbmcaddon.Addon('plugin.video.couchpotato_manager')
+                if addon:
+                    items.append({
+                    'label':'[COLOR orange][B]%s[/B][/COLOR] [COLOR green][B]CouchPotato[/B][/COLOR]' % (title), 
+                    'path':"plugin://plugin.video.couchpotato_manager/movies/add/?title=%s" % (title)
+                    })
+            except:
+                pass
         else:
             meta_url = "plugin://plugin.video.meta/tv/search_term/%s/1" % (title)
             items.append({
@@ -84,11 +92,15 @@ def play(channel,title,season,episode):
             'path': meta_url,
             'is_playable': False,
              }) 
-            if xbmcaddon.Addon('plugin.video.sickrage'):
-                items.append({
-                'label':'[COLOR orange][B]%s[/B][/COLOR] [COLOR green][B]SickRage[/B][/COLOR]' % (title), 
-                'path':"plugin://plugin.video.sickrage?action=addshow&&show_name=%s" % (title),
-                })  
+            try:
+                addon = xbmcaddon.Addon('plugin.video.sickrage')
+                if addon:
+                    items.append({
+                    'label':'[COLOR orange][B]%s[/B][/COLOR] [COLOR green][B]SickRage[/B][/COLOR]' % (title), 
+                    'path':"plugin://plugin.video.sickrage?action=addshow&&show_name=%s" % (title),
+                    })
+            except:
+                pass
    
     items.extend(channel_items)
     return items
