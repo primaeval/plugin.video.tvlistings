@@ -9,6 +9,7 @@ from resources.lib.pytz import timezone
 import datetime
 
 import HTMLParser
+import xbmcplugin
 
 
 plugin = Plugin()
@@ -146,8 +147,8 @@ def play_channeldk(name,number):
     return items
     
     
-@plugin.route('/play_channel/<name>/<number>')
-def play_channel(name,number):
+@plugin.route('/channel/<id>/<name>/<number>')
+def channel(id,name,number):
     if plugin.get_setting('ini_reload') == 'true':
         store_channels()
         plugin.set_setting('ini_reload','false')
@@ -171,16 +172,17 @@ def play_channel(name,number):
         except:
             pass
 
-    url = 'http://my.tvguide.co.uk/channellisting.asp?ch=%s' % number
+    url = 'http://%s.yo.tv/tv_guide/channel/%s/%s' % (id,number,name)
         
     item = {
-    'label': '[COLOR yellow][B]%s[/B][/COLOR] [COLOR red][B]Listing[/B][/COLOR]' % (name),
+    'label': '[COLOR yellow][B]%s[/B][/COLOR] [COLOR red][B]Listing[/B][/COLOR]' % (re.sub('_',' ',name)),
     'path': plugin.url_for('listing', name=name,number=number,url=url),
     'is_playable': False,
     }
     items.append(item)
         
     return items
+
     
 def local_time(ttime,year,month,day):
     match = re.search(r'(.{1,2}):(.{2})(.{2})',ttime)
@@ -373,10 +375,8 @@ def load_channels():
         f.close()
         
         
-              
-
-@plugin.route('/channels/<id>/<name>')
-def channels(id,name):
+@plugin.route('/listings/<id>/<name>')
+def listings(id,name):
     html = get_url('http://%s.yo.tv/' % id)
     
     channels = html.split('<li><a data-ajax="false"')
@@ -414,12 +414,60 @@ def channels(id,name):
         #else:
         items.append(item)
 
+    #
+    plugin.set_content('episodes')    
+    #TODO
+    plugin.add_sort_method(xbmcplugin.SORT_METHOD_TITLE)
+    plugin.add_sort_method(xbmcplugin.SORT_METHOD_UNSORTED)
+    #plugin.set_view_mode(51)
+    return items 
+
+@plugin.route('/channels/<id>/<name>')
+def channels(id,name):
+    html = get_url('http://%s.yo.tv/' % id)
+    
+    channels = html.split('<li><a data-ajax="false"')
+    videos = []
+    favourite_channels = plugin.get_storage('favourite_channels')
+    items = []
+    for channel in channels:
+        img_url = ''
+
+        img_match = re.search(r'<img class="lazy" src="/Content/images/yo/program_logo.gif" data-original="(.*?)"', channel)
+        if img_match:
+            img_url = img_match.group(1)
+
+        name = ''
+        number = ''
+        name_match = re.search(r'href="/tv_guide/channel/(.*?)/(.*?)"', channel)
+        if name_match:
+            number = name_match.group(1)
+            name = name_match.group(2)
+            #name = re.sub('_',' ',name)
+        else:
+            continue
+        channel_number = number
+
+        url = 'http://%s.yo.tv/tv_guide/channel/%s/%s' % (id,number,name)
+
+        label = "[COLOR yellow][B]%s[/B][/COLOR]" % (re.sub('_',' ',name))
+            
+        item = {'label':label,'icon':img_url,'thumbnail':img_url}
+        item['path'] = plugin.url_for('channel', id=id, name=name, number=number)
+        
+        #if favourites == 'true':
+        #    if channel_number in favourite_channels:
+        #        items.append(item)
+        #else:
+        items.append(item)
+
+    plugin.add_sort_method(xbmcplugin.SORT_METHOD_TITLE)
     plugin.set_view_mode(51)
     return items    
     
 @plugin.route('/now_nextdk/<id>/<name>')
 def now_next(id,name):
-
+    channel_name = name
     html = get_url('http://%s.yo.tv/' % id)
 
     
@@ -492,7 +540,7 @@ def now_next(id,name):
             label = "%s [COLOR orange][B]%s[/B][/COLOR] %s [COLOR white][B]%s[/B][/COLOR] %s [COLOR grey][B]%s[/B][/COLOR]" % (start,program,next_start,next_program,after_start,after_program)
             
         item = {'label':label,'icon':img_url,'thumbnail':img_url}
-        item['path'] = plugin.url_for('play_channeldk', name=name, number=number)
+        item['path'] = plugin.url_for('channel', id=id, name=name, number=number)
         
         #if favourites == 'true':
         #    if channel_number in favourite_channels:
@@ -502,7 +550,6 @@ def now_next(id,name):
 
     plugin.set_view_mode(51)
     return items
-    
 
    
    
@@ -596,7 +643,7 @@ def store_channels():
 def country(id,name):
     items = [  
     {
-        'label': '[COLOR red][B]%s[/B][/COLOR]: [COLOR yellow]Now Next After[/COLOR]' % name,
+        'label': '[COLOR red][B]%s[/B][/COLOR]: [COLOR green]Now Next After[/COLOR]' % name,
         'path': plugin.url_for('now_next', id=id, name=name)
 
     },
@@ -605,7 +652,11 @@ def country(id,name):
         'path': plugin.url_for('channels', id=id, name=name)
 
     },     
+    {
+        'label': '[COLOR red][B]%s[/B][/COLOR]: [COLOR red]Listings[/COLOR]' % name,
+        'path': plugin.url_for('listings', id=id, name=name)
 
+    },
     ]
     return items
             
