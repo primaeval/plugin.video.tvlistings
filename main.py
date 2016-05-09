@@ -204,78 +204,16 @@ def local_time(ttime,year,month,day):
 
     return ttime
 
-@plugin.route('/listingdk/<name>/<number>/<url>')
-def listingdk(name,number,url):
-    headers = {'user-agent': 'Mozilla/5.0 (BB10; Touch) AppleWebKit/537.10+ (KHTML, like Gecko) Version/10.0.9.2372 Mobile Safari/537.10+'}
-    r = requests.get(url,headers=headers)
-    #log(r)
-    html = HTMLParser.HTMLParser().unescape(r.content.decode('utf-8'))
-    log2(html)
-    #return
+@plugin.route('/listing/<name>/<number>/<url>')
+def listing(name,number,url):
+    html = get_url(url)
 
     items = []
-    '''
-    match = re.search(r'<span class=programmeheading>(.*?), (.*?) (.*?), (.*?)</span>.*?<a href=\'(.*?)\'>previous</a>.*?<a href=\'(.*?)\'.*?>next</a>',html,flags=(re.DOTALL | re.MULTILINE))
-    day =''
-    month=''
-    year=''
-    if match:
-        year = match.group(4)
-        month = match.group(2)
-        day = match.group(3)
-        next = 'http://my.tvguide.co.uk%s' % match.group(6)
-        previous = 'http://my.tvguide.co.uk%s' % match.group(5)
-        next_day = ''
-        match = re.search(r'cTime=(.*?) ',next)
-        if match:
-            next_day = match.group(1)
-        previous_day = ''
-        match = re.search(r'cTime=(.*?) ',previous)
-        if match:
-            previous_day = match.group(1)
-        next_label = '>> [B]Next[/B] (%s) >>' % next_day
-        previous_label = '<< [B]Previous[/B] (%s) <<' % previous_day
-        items.append({'label': previous_label, 'path' : plugin.url_for('listing', name=name.encode("utf8"),number=number,url=previous)})
-        items.append({'label': next_label, 'path' : plugin.url_for('listing', name=name.encode("utf8"),number=number,url=next)})
-    '''
+
     tables = html.split('<a data-ajax="false"')
 
     for table in tables:
-        #log2(table)
-        '''
-        thumb = ''
-        match = re.search(r'background-image: url\((.*?)\)',table,flags=(re.DOTALL | re.MULTILINE))
-        if match:
-            thumb = match.group(1)
-        match = re.search(r'<a href="(http://www.tvguide.co.uk/detail/.*?)"',table,flags=(re.DOTALL | re.MULTILINE))
-        path = ''
-        if match:
-            detail = url=match.group(1).encode("utf8")
-        '''
-        '''
-        season = '0'
-        episode = '0'
-        match = re.search(r'<b><span class="season">Season (.*?) </span> <span class="season">Episode (.*?) of (.*?)</span>',table,flags=(re.DOTALL | re.MULTILINE))
-        if match:
-            season = match.group(1)
-            episode = match.group(2)
-        
-        genre = ''
-        match = re.search(r'<span class="tvchannel">Category </span><span class="programmetext">(.*?)</span>',table,flags=(re.DOTALL | re.MULTILINE))
-        if match:
-            genre = match.group(1)
-            
-        ttime = ''
-        title = ''
-        plot = ''
-        match = re.search(r'<span class="season">(.*?) </span>.*?<span class="programmeheading" >(.*?)</span>.*?<span class="programmetext">(.*?)</span>',table,flags=(re.DOTALL | re.MULTILINE))
-        if match:
-            ttime = match.group(1)
-            title = match.group(2)
-            plot = match.group(3)
-            mon = {'January':0,'February':1,'March':2,'April':4,'May':5,'June':6,'July':7,'August':8,'September':9,'October':10,'November':11,'December':12}
-            ttime = local_time(ttime,year,mon[month],day)
-        '''
+
         thumb = ''
         season = ''
         episode = ''
@@ -304,10 +242,6 @@ def listingdk(name,number,url):
         match = re.search(r'<h2> (.*?) </h2>',table)
         if match:
             title = match.group(1)
-            
-        
-
-
 
         
         path = plugin.url_for('play', channel=number,title=title.encode("utf8"),season=season,episode=episode)
@@ -336,101 +270,14 @@ def listingdk(name,number,url):
         match = re.search(r'<li class="dt">(.*?)</li>',table)
         if match:
             label = "[COLOR red][B]%s[/B][/COLOR]" % (match.group(1))
-            items.append({'label':label,'is_playable':True,'path':plugin.url_for('listingdk', name=name, number=number, url=url)})
+            items.append({'label':label,'is_playable':True,'path':plugin.url_for('listing', name=name,number=number,url=url)})
         
 
     plugin.set_content('episodes')    
     plugin.set_view_mode(51)
     return items
     
-@plugin.route('/listing/<name>/<number>/<url>')
-def listing(name,number,url):
-    r = requests.get(url)
-    html = r.text
 
-    items = []
-    
-    match = re.search(r'<span class=programmeheading>(.*?), (.*?) (.*?), (.*?)</span>.*?<a href=\'(.*?)\'>previous</a>.*?<a href=\'(.*?)\'.*?>next</a>',html,flags=(re.DOTALL | re.MULTILINE))
-    day =''
-    month=''
-    year=''
-    if match:
-        year = match.group(4)
-        month = match.group(2)
-        day = match.group(3)
-        next = 'http://my.tvguide.co.uk%s' % match.group(6)
-        previous = 'http://my.tvguide.co.uk%s' % match.group(5)
-        next_day = ''
-        match = re.search(r'cTime=(.*?) ',next)
-        if match:
-            next_day = match.group(1)
-        previous_day = ''
-        match = re.search(r'cTime=(.*?) ',previous)
-        if match:
-            previous_day = match.group(1)
-        next_label = '>> [B]Next[/B] (%s) >>' % next_day
-        previous_label = '<< [B]Previous[/B] (%s) <<' % previous_day
-        items.append({'label': previous_label, 'path' : plugin.url_for('listing', name=name.encode("utf8"),number=number,url=previous)})
-        items.append({'label': next_label, 'path' : plugin.url_for('listing', name=name.encode("utf8"),number=number,url=next)})
-
-    tables = html.split('<table')
-
-    for table in tables:
-        thumb = ''
-        match = re.search(r'background-image: url\((.*?)\)',table,flags=(re.DOTALL | re.MULTILINE))
-        if match:
-            thumb = match.group(1)
-        match = re.search(r'<a href="(http://www.tvguide.co.uk/detail/.*?)"',table,flags=(re.DOTALL | re.MULTILINE))
-        path = ''
-        if match:
-            detail = url=match.group(1).encode("utf8")
-            
-        season = '0'
-        episode = '0'
-        match = re.search(r'<b><span class="season">Season (.*?) </span> <span class="season">Episode (.*?) of (.*?)</span>',table,flags=(re.DOTALL | re.MULTILINE))
-        if match:
-            season = match.group(1)
-            episode = match.group(2)
-        
-        genre = ''
-        match = re.search(r'<span class="tvchannel">Category </span><span class="programmetext">(.*?)</span>',table,flags=(re.DOTALL | re.MULTILINE))
-        if match:
-            genre = match.group(1)
-            
-        ttime = ''
-        title = ''
-        plot = ''
-        match = re.search(r'<span class="season">(.*?) </span>.*?<span class="programmeheading" >(.*?)</span>.*?<span class="programmetext">(.*?)</span>',table,flags=(re.DOTALL | re.MULTILINE))
-        if match:
-            ttime = match.group(1)
-            title = match.group(2)
-            plot = match.group(3)
-            mon = {'January':0,'February':1,'March':2,'April':4,'May':5,'June':6,'July':7,'August':8,'September':9,'October':10,'November':11,'December':12}
-            ttime = local_time(ttime,year,mon[month],day)
-            
-        path = plugin.url_for('play', channel=number,title=title.encode("utf8"),season=season,episode=episode)
-        
-        if title:
-            if  plugin.get_setting('channel_name') == 'true':
-                if plugin.get_setting('show_plot') == 'true':
-                    label = "[COLOR yellow][B]%s[/B][/COLOR] %s [COLOR orange][B]%s[/B][/COLOR] %s" % (name,ttime,title,plot)
-                else:
-                    label = "[COLOR yellow][B]%s[/B][/COLOR] %s [COLOR orange][B]%s[/B][/COLOR]" % (name,ttime,title)
-            else:
-                if plugin.get_setting('show_plot') == 'true':
-                    label = "%s [COLOR orange][B]%s[/B][/COLOR] %s" % (ttime,title,plot)
-                else:
-                    label = "%s [COLOR orange][B]%s[/B][/COLOR]" % (ttime,title)
-            item = {'label': label,  'thumbnail': thumb, 'info': {'plot':plot, 'season':season, 'episode':episode, 'genre':genre}}
-            if path:
-                item['path'] = path
-            else:
-                item['is_playable'] = False
-            items.append(item)
-
-    plugin.set_content('episodes')    
-    plugin.set_view_mode(51)
-    return items
     
 def channel_listing_item(name,number):
     thumb = "http://my.tvguide.co.uk/channel_logos/60x35/%s.png" % number
@@ -526,32 +373,11 @@ def load_channels():
         f.close()
         
         
-    
-@plugin.route('/channels/<favourites>')
-def channels(favourites):
-    items = []
-    channel_number = plugin.get_storage('channel_number')
-    favourite_channels = plugin.get_storage('favourite_channels')
-    if favourites == 'true':
-        for number in favourite_channels:
-            name = favourite_channels[number]
-            items.append(channel_listing_item(name,number))            
-    else:
-        for number in channel_number:
-            name = channel_number[number]
-            items.append(channel_listing_item(name,number))
+              
 
-    plugin.set_view_mode(51)
-    sorted_items = sorted(items, key=lambda item: item['label'])
-    return sorted_items                
-
-@plugin.route('/channelsdk/<favourites>')
-def channelsdk(favourites):
-    html = get_url('http://uk.yo.tv/')
-    #html = r.text
-    #html = HTMLParser.HTMLParser().unescape(r.content.decode('utf-8'))
-    #log2(html)
-    #return
+@plugin.route('/channels/<id>/<name>')
+def channels(id,name):
+    html = get_url('http://%s.yo.tv/' % id)
     
     channels = html.split('<li><a data-ajax="false"')
     videos = []
@@ -570,35 +396,32 @@ def channelsdk(favourites):
         if name_match:
             number = name_match.group(1)
             name = name_match.group(2)
-            name = re.sub('_',' ',name)
+            #name = re.sub('_',' ',name)
+        else:
+            continue
         channel_number = number
 
-        url = 'http://uk.yo.tv/tv_guide/channel/%s/%s' % (number,name)
+        url = 'http://%s.yo.tv/tv_guide/channel/%s/%s' % (id,number,name)
 
-        label = "[COLOR yellow][B]%s[/B][/COLOR]" % (name)
+        label = "[COLOR yellow][B]%s[/B][/COLOR]" % (re.sub('_',' ',name))
             
         item = {'label':label,'icon':img_url,'thumbnail':img_url}
-        item['path'] = plugin.url_for('listingdk', name=name, number=number, url=url)
+        item['path'] = plugin.url_for('listing', name=name, number=number, url=url)
         
-        if favourites == 'true':
-            if channel_number in favourite_channels:
-                items.append(item)
-        else:
-            items.append(item)
+        #if favourites == 'true':
+        #    if channel_number in favourite_channels:
+        #        items.append(item)
+        #else:
+        items.append(item)
 
     plugin.set_view_mode(51)
     return items    
     
-@plugin.route('/now_nextdk/<favourites>')
-def now_nextdk(favourites):
-    headers = {'user-agent': 'Mozilla/5.0 (BB10; Touch) AppleWebKit/537.10+ (KHTML, like Gecko) Version/10.0.9.2372 Mobile Safari/537.10+'}
-    
+@plugin.route('/now_nextdk/<id>/<name>')
+def now_next(id,name):
 
-    r = requests.get('http://uk.yo.tv/',headers=headers)
-    #html = r.text
-    html = HTMLParser.HTMLParser().unescape(r.content.decode('utf-8'))
-    #log2(html)
-    #return
+    html = get_url('http://%s.yo.tv/' % id)
+
     
     channels = html.split('<li><a data-ajax="false"')
     videos = []
@@ -617,6 +440,8 @@ def now_nextdk(favourites):
         if name_match:
             number = name_match.group(1)
             name = name_match.group(2)
+        else:
+            continue
 
            
         channel_number = '0'
@@ -662,94 +487,23 @@ def now_nextdk(favourites):
 
         channel_name = plugin.get_setting('channel_name')
         if  channel_name == 'true':
-            label = "[COLOR yellow][B]%s[/B][/COLOR] %s [COLOR orange][B]%s[/B][/COLOR] %s [COLOR white][B]%s[/B][/COLOR] %s [COLOR grey][B]%s[/B][/COLOR]" % (name,start,program,next_start,next_program,after_start,after_program)
+            label = "[COLOR yellow][B]%s[/B][/COLOR] %s [COLOR orange][B]%s[/B][/COLOR] %s [COLOR white][B]%s[/B][/COLOR] %s [COLOR grey][B]%s[/B][/COLOR]" % (re.sub('_',' ',name),start,program,next_start,next_program,after_start,after_program)
         else:
             label = "%s [COLOR orange][B]%s[/B][/COLOR] %s [COLOR white][B]%s[/B][/COLOR] %s [COLOR grey][B]%s[/B][/COLOR]" % (start,program,next_start,next_program,after_start,after_program)
             
         item = {'label':label,'icon':img_url,'thumbnail':img_url}
         item['path'] = plugin.url_for('play_channeldk', name=name, number=number)
         
-        if favourites == 'true':
-            if channel_number in favourite_channels:
-                items.append(item)
-        else:
-            items.append(item)
+        #if favourites == 'true':
+        #    if channel_number in favourite_channels:
+        #        items.append(item)
+        #else:
+        items.append(item)
 
     plugin.set_view_mode(51)
     return items
     
-@plugin.route('/now_next/<favourites>')
-def now_next(favourites):
-    r = requests.get('http://www.tvguide.co.uk/mobile/')
-    html = r.text
-    
-    channels = html.split('<div class="div-channel-progs">')
-    videos = []
-    favourite_channels = plugin.get_storage('favourite_channels')
-    items = []
-    for channel in channels:
-        img_url = ''
-        name = ''
-        img_match = re.search(r'<img class="img-channel-logo" width="50" src="(.*?)"\s*?alt="(.*?) TV Listings" />', channel)
-        if img_match:
-            img_url = img_match.group(1)
-            name = img_match.group(2)
-            
-        channel_number = '0'
-        match = re.search(r'href="http://www\.tvguide\.co\.uk/mobile/channellisting\.asp\?ch=(.*?)"', channel)
-        if match:
-            channel_number=match.group(1)
-            if favourites == 'true':
-                if not channel_number in favourite_channels:
-                    continue
-        else:
-            continue
 
-        start = ''
-        program = ''
-        next_start = ''
-        next_program = ''
-        after_start = ''
-        after_program = ''
-        match = re.search(r'<div class="div-time">(.*?)</div>.*?<div class="div-title".*?">(.*?)</div>.*?<div class="div-time">(.*?)</div>.*?<div class="div-title".*?">(.*?)</div>.*?<div class="div-time">(.*?)</div>.*?<div class="div-title".*?">(.*?)</div>', channel,flags=(re.DOTALL | re.MULTILINE))
-        if match:
-            now = datetime.datetime.now()
-            year = now.year
-            month = now.month
-            day = now.day
-            start = local_time(match.group(1),year,month,day)
-            program = match.group(2)
-            next_start = local_time(match.group(3),year,month,day)
-            next_program = match.group(4)
-            after_start = local_time(match.group(5),year,month,day)
-            after_program = match.group(6)            
-            match = re.search('<img.*?>&nbsp;(.*)',program)
-            if match:
-                program = match.group(1)
-            match = re.search('<img.*?>&nbsp;(.*)',next_program)
-            if match:
-                next_program = match.group(1)
-            match = re.search('<img.*?>&nbsp;(.*)',after_program)
-            if match:
-                after_program = match.group(1)
-
-        channel_name = plugin.get_setting('channel_name')
-        if  channel_name == 'true':
-            label = "[COLOR yellow][B]%s[/B][/COLOR] %s [COLOR orange][B]%s[/B][/COLOR] %s [COLOR white][B]%s[/B][/COLOR] %s [COLOR grey][B]%s[/B][/COLOR]" % (name,start,program,next_start,next_program,after_start,after_program)
-        else:
-            label = "%s [COLOR orange][B]%s[/B][/COLOR] %s [COLOR white][B]%s[/B][/COLOR] %s [COLOR grey][B]%s[/B][/COLOR]" % (start,program,next_start,next_program,after_start,after_program)
-            
-        item = {'label':label,'icon':img_url,'thumbnail':img_url}
-        item['path'] = plugin.url_for('play_channel', name=name, number=channel_number)
-        
-        if favourites == 'true':
-            if channel_number in favourite_channels:
-                items.append(item)
-        else:
-            items.append(item)
-
-    plugin.set_view_mode(51)
-    return items
    
    
 @plugin.route('/all_favourites')
@@ -838,23 +592,49 @@ def store_channels():
         except:
             pass
 
-    
-@plugin.route('/')
-def index():
-    #load_channels()
-    #load_channelsdk()
+@plugin.route('/country/<id>/<name>')
+def country(id,name):
     items = [  
     {
-        'label': '[COLOR red][B]DK All[/B][/COLOR]: [COLOR yellow]Now Next After[/COLOR] popular',
-        'path': plugin.url_for('now_nextdk', favourites='false'),
+        'label': '[COLOR red][B]%s[/B][/COLOR]: [COLOR yellow]Now Next After[/COLOR]' % name,
+        'path': plugin.url_for('now_next', id=id, name=name)
 
     },
     {
-        'label': '[COLOR red][B]DK All[/B][/COLOR]: [COLOR yellow]Channels[/COLOR] popular',
-        'path': plugin.url_for('channelsdk', favourites='false'),
+        'label': '[COLOR red][B]%s[/B][/COLOR]: [COLOR yellow]Channels[/COLOR]' % name,
+        'path': plugin.url_for('channels', id=id, name=name)
 
-    }     
+    },     
+
+    ]
+    return items
+            
+@plugin.route('/counties')
+def countries():
+    html = get_url("http://www.yo.tv")
+
+    items = []
+
     
+    list_items = re.findall(r'<li><a href="http://(.*?)\.yo\.tv"  >(.*?)</a></li>',html,flags=(re.DOTALL | re.MULTILINE))
+    
+    for (id,name) in list_items:
+        name = name.encode("utf8")
+        items.append({'label': '[COLOR red][B]%s[/B][/COLOR]' % name,'path': plugin.url_for('country', id=id, name=name)})
+
+    plugin.set_content('episodes')    
+    plugin.set_view_mode(51)
+    return items
+    
+    
+@plugin.route('/')
+def index():
+    items = [  
+    {
+        'label': '[COLOR red][B]Countries[/B][/COLOR]',
+        'path': plugin.url_for('countries'),
+
+    },    
     ]
     return items
     
