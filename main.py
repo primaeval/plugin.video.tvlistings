@@ -31,6 +31,7 @@ def get_tvdb_id(name):
   
 @plugin.route('/play/<channel>/<title>/<season>/<episode>')
 def play(channel,title,season,episode):
+    #log2(episode)
     channel_number = plugin.get_storage('channel_number')
     #channel_items = play_channel(channel_number[channel],channel)
     items = []
@@ -209,7 +210,7 @@ def listingdk(name,number,url):
     r = requests.get(url,headers=headers)
     #log(r)
     html = HTMLParser.HTMLParser().unescape(r.content.decode('utf-8'))
-    #log2(html)
+    log2(html)
     #return
 
     items = []
@@ -280,12 +281,19 @@ def listingdk(name,number,url):
         episode = ''
         episode_title = ''
         genre = ''
+        plot = ''
         
-        match = re.search(r'<span class="episode">Season (.*?) Episode (.*?)<span>(.*?)</span>',table,flags=(re.DOTALL | re.MULTILINE))
+        match = re.search(r'<span class="episode">Season (.*?) Episode (.*?)<span>(.*?)</span>.*?</span>(.*?)<',table,flags=(re.DOTALL | re.MULTILINE))
         if match:
-            season = match.group(1)
-            episode = match.group(2)
-            episode_title = match.group(3)
+            season = match.group(1).strip('\n\r\t ')
+            episode = match.group(2).strip('\n\r\t ')
+            episode_title = match.group(3).strip('\n\r\t ')
+            plot = match.group(4).strip('\n\r\t ')
+        else:
+            match = re.search(r'<div class="desc">(.*?)<',table,flags=(re.DOTALL | re.MULTILINE))
+            if match:
+                plot = match.group(1).strip()
+            
         
         ttime = ''
         match = re.search(r'<span class="time">(.*?)</span>',table)
@@ -298,10 +306,8 @@ def listingdk(name,number,url):
             title = match.group(1)
             
         
-        plot = ''
-        match = re.search(r'<div class="desc">(.*?)<',table,flags=(re.DOTALL | re.MULTILINE))
-        if match:
-            plot = match.group(1).strip()
+
+
 
         
         path = plugin.url_for('play', channel=number,title=title.encode("utf8"),season=season,episode=episode)
@@ -323,6 +329,15 @@ def listingdk(name,number,url):
             else:
                 item['is_playable'] = False
             items.append(item)
+        else:
+            log2(table)
+            
+            
+        match = re.search(r'<li class="dt">(.*?)</li>',table)
+        if match:
+            label = "[COLOR red][B]%s[/B][/COLOR]" % (match.group(1))
+            items.append({'label':label,'is_playable':True,'path':plugin.url_for('listingdk', name=name, number=number, url=url)})
+        
 
     plugin.set_content('episodes')    
     plugin.set_view_mode(51)
@@ -530,6 +545,50 @@ def channels(favourites):
     sorted_items = sorted(items, key=lambda item: item['label'])
     return sorted_items                
 
+@plugin.route('/channelsdk/<favourites>')
+def channelsdk(favourites):
+    html = get_url('http://uk.yo.tv/')
+    #html = r.text
+    #html = HTMLParser.HTMLParser().unescape(r.content.decode('utf-8'))
+    #log2(html)
+    #return
+    
+    channels = html.split('<li><a data-ajax="false"')
+    videos = []
+    favourite_channels = plugin.get_storage('favourite_channels')
+    items = []
+    for channel in channels:
+        img_url = ''
+
+        img_match = re.search(r'<img class="lazy" src="/Content/images/yo/program_logo.gif" data-original="(.*?)"', channel)
+        if img_match:
+            img_url = img_match.group(1)
+
+        name = ''
+        number = ''
+        name_match = re.search(r'href="/tv_guide/channel/(.*?)/(.*?)"', channel)
+        if name_match:
+            number = name_match.group(1)
+            name = name_match.group(2)
+            name = re.sub('_',' ',name)
+        channel_number = number
+
+        url = 'http://uk.yo.tv/tv_guide/channel/%s/%s' % (number,name)
+
+        label = "[COLOR yellow][B]%s[/B][/COLOR]" % (name)
+            
+        item = {'label':label,'icon':img_url,'thumbnail':img_url}
+        item['path'] = plugin.url_for('listingdk', name=name, number=number, url=url)
+        
+        if favourites == 'true':
+            if channel_number in favourite_channels:
+                items.append(item)
+        else:
+            items.append(item)
+
+    plugin.set_view_mode(51)
+    return items    
+    
 @plugin.route('/now_nextdk/<favourites>')
 def now_nextdk(favourites):
     headers = {'user-agent': 'Mozilla/5.0 (BB10; Touch) AppleWebKit/537.10+ (KHTML, like Gecko) Version/10.0.9.2372 Mobile Safari/537.10+'}
@@ -598,6 +657,8 @@ def now_nextdk(favourites):
             #match = re.search('<img.*?>&nbsp;(.*)',after_program)
             #if match:
             #    after_program = match.group(1)
+        else:
+            log2(channel)
 
         channel_name = plugin.get_setting('channel_name')
         if  channel_name == 'true':
@@ -787,32 +848,13 @@ def index():
         'label': '[COLOR red][B]DK All[/B][/COLOR]: [COLOR yellow]Now Next After[/COLOR] popular',
         'path': plugin.url_for('now_nextdk', favourites='false'),
 
-    } ,      
+    },
     {
-        'label': '[COLOR green][B]Favourites[/B][/COLOR]: [COLOR yellow]Now Next After[/COLOR] popular',
-        'path': plugin.url_for('now_next', favourites='true' ),
+        'label': '[COLOR red][B]DK All[/B][/COLOR]: [COLOR yellow]Channels[/COLOR] popular',
+        'path': plugin.url_for('channelsdk', favourites='false'),
 
-    } ,  
-    {
-        'label': '[COLOR green][B]Favourites[/B][/COLOR]: [COLOR orange]Channel Listings[/COLOR] full',
-        'path': plugin.url_for('channels', favourites='true' ),
-
-    } ,      
-    {
-        'label': '[COLOR red][B]All[/B][/COLOR]: [COLOR yellow]Now Next After[/COLOR] popular',
-        'path': plugin.url_for('now_next', favourites='false'),
-
-    } ,  
-    {
-        'label': '[COLOR red][B]All[/B][/COLOR]: [COLOR orange]Channel Listings[/COLOR] full',
-        'path': plugin.url_for('channels', favourites='false'),
-
-    } ,        
-    {
-        'label': '[B]Favourites[/B]: Toggle',
-        'path': plugin.url_for('set_favourites' ),
-
-    } ,     
+    }     
+    
     ]
     return items
     
