@@ -32,7 +32,7 @@ def get_tvdb_id(name):
 @plugin.route('/play/<channel>/<title>/<season>/<episode>')
 def play(channel,title,season,episode):
     channel_number = plugin.get_storage('channel_number')
-    channel_items = play_channel(channel_number[channel],channel)
+    #channel_items = play_channel(channel_number[channel],channel)
     items = []
     tvdb_id = ''
     if int(season) > 0 and int(episode) > 0:
@@ -104,7 +104,7 @@ def play(channel,title,season,episode):
             except:
                 pass
    
-    items.extend(channel_items)
+    #items.extend(channel_items)
     return items
 
     
@@ -133,7 +133,7 @@ def play_channeldk(name,number):
         except:
             pass
 
-    url = 'http://danmark.yo.tv/tv_guide/channel/%s/%s' % (number,name)
+    url = 'http://uk.yo.tv/tv_guide/channel/%s/%s' % (number,name)
         
     item = {
     'label': '[COLOR yellow][B]%s[/B][/COLOR] [COLOR red][B]Listing[/B][/COLOR]' % (name),
@@ -207,7 +207,7 @@ def local_time(ttime,year,month,day):
 def listingdk(name,number,url):
     headers = {'user-agent': 'Mozilla/5.0 (BB10; Touch) AppleWebKit/537.10+ (KHTML, like Gecko) Version/10.0.9.2372 Mobile Safari/537.10+'}
     r = requests.get(url,headers=headers)
-    log(r)
+    #log(r)
     html = HTMLParser.HTMLParser().unescape(r.content.decode('utf-8'))
     #log2(html)
     #return
@@ -240,7 +240,7 @@ def listingdk(name,number,url):
     tables = html.split('<a data-ajax="false"')
 
     for table in tables:
-        log2(table)
+        #log2(table)
         '''
         thumb = ''
         match = re.search(r'background-image: url\((.*?)\)',table,flags=(re.DOTALL | re.MULTILINE))
@@ -278,7 +278,14 @@ def listingdk(name,number,url):
         thumb = ''
         season = ''
         episode = ''
+        episode_title = ''
         genre = ''
+        
+        match = re.search(r'<span class="episode">Season (.*?) Episode (.*?)<span>(.*?)</span>',table,flags=(re.DOTALL | re.MULTILINE))
+        if match:
+            season = match.group(1)
+            episode = match.group(2)
+            episode_title = match.group(3)
         
         ttime = ''
         match = re.search(r'<span class="time">(.*?)</span>',table)
@@ -289,6 +296,7 @@ def listingdk(name,number,url):
         match = re.search(r'<h2> (.*?) </h2>',table)
         if match:
             title = match.group(1)
+            
         
         plot = ''
         match = re.search(r'<div class="desc">(.*?)<',table,flags=(re.DOTALL | re.MULTILINE))
@@ -296,7 +304,7 @@ def listingdk(name,number,url):
             plot = match.group(1).strip()
 
         
-        path = ''#plugin.url_for('play', channel=number,title=title.encode("utf8"),season=season,episode=episode)
+        path = plugin.url_for('play', channel=number,title=title.encode("utf8"),season=season,episode=episode)
         
         if title:
             if  plugin.get_setting('channel_name') == 'true':
@@ -415,7 +423,54 @@ def channel_listing_item(name,number):
     label = '[COLOR yellow][B]%s[/B][/COLOR]' % name
     item = {'label': label, 'thumbnail': thumb, 'path': plugin.url_for('listing', name=name.encode("utf8"),number=number, url=url)}
     return item
+   
+def get_url(url):
+    headers = {'user-agent': 'Mozilla/5.0 (BB10; Touch) AppleWebKit/537.10+ (KHTML, like Gecko) Version/10.0.9.2372 Mobile Safari/537.10+'}
+    r = requests.get(url,headers=headers)
+    html = HTMLParser.HTMLParser().unescape(r.content.decode('utf-8'))
+    return html
+   
+def load_channelsdk():
+    if plugin.get_setting('channels_reload') == 'true':
+        plugin.set_setting('channels_reload','false')
+        #r = requests.get('http://uk.yo.tv/')
+        html = get_url('http://uk.yo.tv/')
+        
+        #TODO
     
+        match = re.search(r'<select name="channelid">(.*?)</select>',html,flags=(re.DOTALL | re.MULTILINE))
+        if not match:
+            return
+        if not xbmcvfs.exists('special://userdata/addon_data/plugin.video.tvlistings/myaddons.ini'):
+            f = xbmcvfs.File('special://userdata/addon_data/plugin.video.tvlistings/myaddons.ini','w')
+            f.close()
+        f = xbmcvfs.File('special://userdata/addon_data/plugin.video.tvlistings/template.ini','w')
+        f.write("# WARNING Make a copy of this file.\n# It will be overwritten on the next channel reload.\n[plugin.video.all]\n")
+        
+        channels = re.findall(r'<option value=(.*?)>(.*?)</option>',match.group(1),flags=(re.DOTALL | re.MULTILINE))
+
+        channel_number = plugin.get_storage('channel_number')
+        for channel in channels:
+            name = channel[1]
+            number = channel[0]
+            channel_number[number] = name
+            line = "%s=\n" % name
+            f.write(line.encode("utf8"))
+        
+        f.write("[plugin.video.now_next_after]\n")
+        r = requests.get('http://www.tvguide.co.uk/mobile/')
+        html = r.text
+        channels = html.split('<div class="div-channel-progs">')
+        for channel in channels:
+            match = re.search(r'href="http://www\.tvguide\.co\.uk/mobile/channellisting\.asp\?ch=(.*?)"', channel)
+            if match:
+                number=match.group(1)
+                name= channel_number[number]
+                line = "%s=\n" % name
+                f.write(line.encode("utf8"))
+                
+        f.close()
+   
 def load_channels():
     if plugin.get_setting('channels_reload') == 'true':
         plugin.set_setting('channels_reload','false')
@@ -480,7 +535,7 @@ def now_nextdk(favourites):
     headers = {'user-agent': 'Mozilla/5.0 (BB10; Touch) AppleWebKit/537.10+ (KHTML, like Gecko) Version/10.0.9.2372 Mobile Safari/537.10+'}
     
 
-    r = requests.get('http://danmark.yo.tv/',headers=headers)
+    r = requests.get('http://uk.yo.tv/',headers=headers)
     #html = r.text
     html = HTMLParser.HTMLParser().unescape(r.content.decode('utf-8'))
     #log2(html)
@@ -725,7 +780,8 @@ def store_channels():
     
 @plugin.route('/')
 def index():
-    load_channels()
+    #load_channels()
+    #load_channelsdk()
     items = [  
     {
         'label': '[COLOR red][B]DK All[/B][/COLOR]: [COLOR yellow]Now Next After[/COLOR] popular',
