@@ -185,7 +185,9 @@ def channel(id,name,number):
 
     
 def local_time(ttime,year,month,day):
-    match = re.search(r'(.{1,2}):(.{2})(.{2})',ttime)
+    log("XXX")
+    log2(ttime)
+    match = re.search(r'(.{1,2}):(.{2}) {0,1}(.{2})',ttime)
     if match:
         hour = int(match.group(1))
         minute = int(match.group(2))
@@ -199,11 +201,15 @@ def local_time(ttime,year,month,day):
                 hour = 0
         
         london = timezone('Europe/London')
+        copenhagen = timezone('Europe/Copenhagen')
         utc = timezone('UTC')
         utc_dt = datetime.datetime(int(year),int(month),int(day),hour,minute,0,tzinfo=utc)
+        #loc_dt = utc_dt
         loc_dt = utc_dt.astimezone(london)
+        #loc_dt = utc_dt.astimezone(utc)
+        #loc_dt = loc_dt.astimezone(copenhagen)
         ttime = "%02d:%02d" % (loc_dt.hour,loc_dt.minute)
-
+        log2(ttime)
     return ttime
 
 @plugin.route('/listing/<name>/<number>/<url>')
@@ -238,7 +244,9 @@ def listing(name,number,url):
         ttime = ''
         match = re.search(r'<span class="time">(.*?)</span>',table)
         if match:
-            ttime = match.group(1)
+            #TODO
+            now = datetime.datetime.now()
+            ttime = local_time(match.group(1),now.year,now.month,now.day)
             
         title = ''
         match = re.search(r'<h2> (.*?) </h2>',table)
