@@ -4,9 +4,10 @@ import re
 
 import requests
 
-import resources.lib.pytz
-from resources.lib.pytz import timezone
-import datetime
+#import resources.lib.pytz
+#from resources.lib.pytz import timezone
+from datetime import datetime
+import time
 
 import HTMLParser
 import xbmcplugin
@@ -183,10 +184,13 @@ def channel(id,name,number):
         
     return items
 
+def utc2local (utc):
+    epoch = time.mktime(utc.timetuple())
+    offset = datetime.fromtimestamp (epoch) - datetime.utcfromtimestamp (epoch)
+    return utc + offset
+    
     
 def local_time(ttime,year,month,day):
-    log("XXX")
-    log2(ttime)
     match = re.search(r'(.{1,2}):(.{2}) {0,1}(.{2})',ttime)
     if match:
         hour = int(match.group(1))
@@ -199,17 +203,13 @@ def local_time(ttime,year,month,day):
         else:
             if hour == 12:
                 hour = 0
-        
-        london = timezone('Europe/London')
-        copenhagen = timezone('Europe/Copenhagen')
-        utc = timezone('UTC')
-        utc_dt = datetime.datetime(int(year),int(month),int(day),hour,minute,0,tzinfo=utc)
-        #loc_dt = utc_dt
-        loc_dt = utc_dt.astimezone(london)
-        #loc_dt = utc_dt.astimezone(utc)
-        #loc_dt = loc_dt.astimezone(copenhagen)
+
+        log((year))
+        log((month))
+        log((day))
+        utc_dt = datetime(int(year),int(month),int(day),hour,minute,0)
+        loc_dt = utc2local(utc_dt)
         ttime = "%02d:%02d" % (loc_dt.hour,loc_dt.minute)
-        log2(ttime)
     return ttime
 
 @plugin.route('/listing/<name>/<number>/<url>')
@@ -217,6 +217,9 @@ def listing(name,number,url):
     html = get_url(url)
 
     items = []
+    month = ""
+    day = ""
+    year = ""
 
     tables = html.split('<a data-ajax="false"')
 
@@ -245,8 +248,8 @@ def listing(name,number,url):
         match = re.search(r'<span class="time">(.*?)</span>',table)
         if match:
             #TODO
-            now = datetime.datetime.now()
-            ttime = local_time(match.group(1),now.year,now.month,now.day)
+            #now = datetime.now()
+            ttime = local_time(match.group(1),year,month,day)
             
         title = ''
         match = re.search(r'<h2> (.*?) </h2>',table)
@@ -274,14 +277,22 @@ def listing(name,number,url):
                 item['is_playable'] = False
             items.append(item)
         else:
-            log2(table)
+            pass
             
             
         match = re.search(r'<li class="dt">(.*?)</li>',table)
         if match:
-            label = "[COLOR red][B]%s[/B][/COLOR]" % (match.group(1))
+            date_str = match.group(1)
+            label = "[COLOR red][B]%s[/B][/COLOR]" % (date_str)
             items.append({'label':label,'is_playable':True,'path':plugin.url_for('listing', name=name,number=number,url=url)})
-        
+            match = re.search(r'(.*?), (.*?) (.*?), (.*)',date_str)
+            if match:
+                weekday = match.group(1)
+                Month = match.group(2)
+                months={"January":"1","February":"2","March":"3","April":"4","May":"5","June":"6","July":"7","August":"8","September":"9","October":"10","November":"11","December":"12"}
+                month = months[Month]
+                day = match.group(3)
+                year = match.group(4)
 
     plugin.set_content('episodes')    
     plugin.set_view_mode(51)
@@ -451,7 +462,6 @@ def channels(id,name):
         if name_match:
             number = name_match.group(1)
             name = name_match.group(2)
-            #name = re.sub('_',' ',name)
         else:
             continue
         channel_number = number
@@ -463,10 +473,6 @@ def channels(id,name):
         item = {'label':label,'icon':img_url,'thumbnail':img_url}
         item['path'] = plugin.url_for('channel', id=id, name=name, number=number)
         
-        #if favourites == 'true':
-        #    if channel_number in favourite_channels:
-        #        items.append(item)
-        #else:
         items.append(item)
 
     plugin.add_sort_method(xbmcplugin.SORT_METHOD_TITLE)
@@ -498,19 +504,9 @@ def now_next(id,name):
             name = name_match.group(2)
         else:
             continue
-
            
         channel_number = '0'
-        ''' 
-        match = re.search(r'href="http://www\.tvguide\.co\.uk/mobile/channellisting\.asp\?ch=(.*?)"', channel)
-        if match:
-            channel_number=match.group(1)
-            if favourites == 'true':
-                if not channel_number in favourite_channels:
-                    continue
-        else:
-            continue
-        '''
+
         start = ''
         program = ''
         next_start = ''
@@ -519,7 +515,7 @@ def now_next(id,name):
         after_program = ''
         match = re.search(r'<li><span class="pt">(.*?)</span>.*?<span class="pn">(.*?)</span>.*?</li>.*?<li><span class="pt">(.*?)</span>.*?<span class="pn">(.*?)</span>.*?</li>.*?<li><span class="pt">(.*?)</span>.*?<span class="pn">(.*?)</span>.*?</li>', channel,flags=(re.DOTALL | re.MULTILINE))
         if match:
-            now = datetime.datetime.now()
+            now = datetime.now()
             year = now.year
             month = now.month
             day = now.day
@@ -529,17 +525,9 @@ def now_next(id,name):
             next_program = match.group(4)
             after_start = local_time(match.group(5),year,month,day)
             after_program = match.group(6)            
-            #match = re.search('<img.*?>&nbsp;(.*)',program)
-            #if match:
-            #    program = match.group(1)
-            #match = re.search('<img.*?>&nbsp;(.*)',next_program)
-            #if match:
-            #    next_program = match.group(1)
-            #match = re.search('<img.*?>&nbsp;(.*)',after_program)
-            #if match:
-            #    after_program = match.group(1)
+
         else:
-            log2(channel)
+            pass
 
         channel_name = plugin.get_setting('channel_name')
         if  channel_name == 'true':
@@ -550,10 +538,6 @@ def now_next(id,name):
         item = {'label':label,'icon':img_url,'thumbnail':img_url}
         item['path'] = plugin.url_for('channel', id=id, name=name, number=number)
         
-        #if favourites == 'true':
-        #    if channel_number in favourite_channels:
-        #        items.append(item)
-        #else:
         items.append(item)
 
     plugin.set_view_mode(51)
