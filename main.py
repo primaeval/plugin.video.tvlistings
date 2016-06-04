@@ -134,7 +134,7 @@ def play_channel(name,number):
         
     item = {
     'label': '[COLOR yellow][B]%s[/B][/COLOR] [COLOR red][B]Listing[/B][/COLOR]' % (name),
-    'path': plugin.url_for('listing', name=name,number=number,url=url),
+    'path': plugin.url_for('listing', name=name.encode("utf8"),number=number,url=url),
     'is_playable': False,
     }
     items.append(item)
@@ -190,8 +190,8 @@ def listing(name,number,url):
             previous_day = match.group(1)
         next_label = '>> [B]Next[/B] (%s) >>' % next_day
         previous_label = '<< [B]Previous[/B] (%s) <<' % previous_day
-        items.append({'label': previous_label, 'path' : plugin.url_for('listing', name=name.encode("utf8"),number=number,url=previous)})
-        items.append({'label': next_label, 'path' : plugin.url_for('listing', name=name.encode("utf8"),number=number,url=next)})
+        items.append({'label': previous_label, 'path' : plugin.url_for('listing', name=name,number=number,url=previous)})
+        items.append({'label': next_label, 'path' : plugin.url_for('listing', name=name,number=number,url=next)})
 
     tables = html.split('<table')
 
@@ -233,15 +233,15 @@ def listing(name,number,url):
         if title:
             if  plugin.get_setting('channel_name') == 'true':
                 if plugin.get_setting('show_plot') == 'true':
-                    label = "[COLOR yellow][B]%s[/B][/COLOR] %s [COLOR orange][B]%s[/B][/COLOR] %s" % (name,ttime,title,plot)
+                    label = "[COLOR yellow][B]%s[/B][/COLOR] %s [COLOR orange][B]%s[/B][/COLOR] %s" % (name,ttime,title.encode("utf8"),plot.encode("utf8"))
                 else:
-                    label = "[COLOR yellow][B]%s[/B][/COLOR] %s [COLOR orange][B]%s[/B][/COLOR]" % (name,ttime,title)
+                    label = "[COLOR yellow][B]%s[/B][/COLOR] %s [COLOR orange][B]%s[/B][/COLOR]" % (name,ttime,title.encode("utf8"))
             else:
                 if plugin.get_setting('show_plot') == 'true':
-                    label = "%s [COLOR orange][B]%s[/B][/COLOR] %s" % (ttime,title,plot)
+                    label = "%s [COLOR orange][B]%s[/B][/COLOR] %s" % (ttime,title.encode("utf8"),plot.encode("utf8"))
                 else:
-                    label = "%s [COLOR orange][B]%s[/B][/COLOR]" % (ttime,title)
-            item = {'label': label,  'thumbnail': thumb, 'info': {'plot':plot, 'season':season, 'episode':episode, 'genre':genre}}
+                    label = "%s [COLOR orange][B]%s[/B][/COLOR]" % (ttime,title.encode("utf8"))
+            item = {'label': label,  'thumbnail': thumb, 'info': {'plot':plot.encode("utf8"), 'season':season, 'episode':episode, 'genre':genre}}
             if path:
                 item['path'] = path
             else:
