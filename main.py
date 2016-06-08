@@ -249,7 +249,6 @@ def listing(name,number,url):
             items.append(item)
 
     plugin.set_content('episodes')    
-    plugin.set_view_mode(51)
     return items
     
 def channel_listing_item(name,number):
@@ -314,7 +313,6 @@ def channels(favourites):
             name = channel_number[number]
             items.append(channel_listing_item(name,number))
 
-    plugin.set_view_mode(51)
     sorted_items = sorted(items, key=lambda item: item['label'])
     return sorted_items                
 
@@ -390,7 +388,6 @@ def now_next(favourites):
         else:
             items.append(item)
 
-    plugin.set_view_mode(51)
     return items
    
    
@@ -440,7 +437,6 @@ def set_favourites():
         item['path'] = path 
         item['thumbnail'] = "http://my.tvguide.co.uk/channel_logos/60x35/%s.png" % number
         items.append(item)
-    plugin.set_view_mode(51)    
     sorted_items = sorted(items, key=lambda item: re.sub('\[.*?\]','',item['label']))
     top_items.extend(sorted_items)
     return top_items
@@ -481,8 +477,10 @@ def store_channels():
             pass
 
     
+index_page = False
 @plugin.route('/')
 def index():
+    index_page = True
     load_channels()
     items = [  
     {
@@ -515,4 +513,5 @@ def index():
     
 if __name__ == '__main__':
     plugin.run()
-    
+    if index_page == False:
+        plugin.set_view_mode(51)
